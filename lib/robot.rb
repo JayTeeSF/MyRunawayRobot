@@ -20,6 +20,7 @@ class Robot
 
     @start_x = 0
     @start_y = 0
+    @skip_odds = false #newest optimization
     @cache_off = options[:cache_off]
     @min = options[:ins_min]
     @max = options[:ins_max]
@@ -72,9 +73,19 @@ class Robot
 
     puts "solving..." if @debug
     #next_move = path_generator
-    even_move = path_generator(true,@min,mid())
-    odd_move = path_generator(false,mid(),@max)
-    next_move = [even_move, odd_move]
+    #even_move = path_generator(true,@min,mid())
+    #odd_move = path_generator(false,mid(),@max)
+    next_move = []
+    # even_move:
+    mid_val = mid()
+    if mid_val > @min
+      next_move << path_generator(true,@min,mid_val)
+      if @max > mid_val
+        mid_val += 1
+      end
+    end
+    # odd_move:
+    next_move << path_generator(true,mid_val,@max)
     move_size = next_move.size
 
     # first check if we've already got a solution to this map...
@@ -84,7 +95,8 @@ class Robot
       puts "found previous solution" #if @debug
       return
     else
-      @path = next_move[(count % move_size)].call
+      idx = move_size > 0 ? count % move_size : 0
+      @path = next_move[idx] ? next_move[idx].call : nil
       count += 1
     end
     puts "trying path: #{@path.inspect}" if @debug
@@ -100,8 +112,18 @@ class Robot
       #end
       # overwrite path:
       #@path = next_move.call
-      @path = next_move[(count % move_size)].call
+      idx = move_size > 0 ? count % move_size : 0
+      @path = next_move[idx] ? next_move[idx].call : nil
       count += 1
+      while @path.nil? && next_move.size > 0
+        idx = move_size > 0 ? (count - 1) % move_size : 0
+        next_move.delete_at(idx)
+        move_size = next_move.size
+        puts "at least one of the move-generators has yielded a nil; trying next"
+        idx = move_size > 0 ? count % move_size : 0
+        @path = next_move[idx] ? next_move[idx].call : nil
+        puts "new path: #{@path.inspect}"
+      end
       puts "trying path: #{@path.inspect}" if @debug
     end
 
@@ -122,25 +144,40 @@ class Robot
   end
 
   def mid(min=@min,max=@max)
-    min + ((max - min) / 2)
+    diff = max - min
+    #return 1 if 0 == diff
+    mid = min + (diff / 2)
+    puts "mid: #{mid}"
+    mid
+    #min + ((max - min) / 2)
   end
 
   #
   # returns a lambda that keeps track & returns the next-possible 'path'
   #
   def path_generator(up=true,min=@min,max=@max)
+    puts up ? "up from #{min} to #{max}" : "down from #{max} to #{min}"
     path_len = up ? min : max
+
     # we start at negative one ...but this gets incremented to 0
     base_ten = -1
 
     lambda do
       base_ten += 1
+      if @skip_odds && ((base_ten % 2) == 1)
+        base_ten += 1
+      end
       if base_ten > ((2 ** path_len) - 1)
+        # this just in...
+        # after doing the first set of base_ten #'s; I should be able to skip
+        # odd's
+
+        @skip_odds = true
         path_len = up ? path_len + 1 : path_len - 1
         base_ten = 0
       end
 
-      if (up && path_len <= max) || path_len >= min
+      if (up && path_len <= max) || ((! up) && path_len >= min)
         # returns a path:
         binary_to_path(generate_binary(path_len, base_ten))
       else

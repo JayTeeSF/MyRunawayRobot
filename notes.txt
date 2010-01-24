@@ -1,3 +1,5 @@
+ruby robot_test.rb -n test_performance
+# --
 it failed due to timeout.
 New solution: add a known_bad_cycles array into Map
 ...that way we can fail quickly
