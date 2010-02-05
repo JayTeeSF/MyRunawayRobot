@@ -20,7 +20,7 @@ class Robot
 
     @start_x = 0
     @start_y = 0
-    @skip_odds = false #newest optimization
+    #@skip_odds = false #newest optimization
     @cache_off = options[:cache_off]
     @min = options[:ins_min]
     @max = options[:ins_max]
@@ -172,7 +172,7 @@ class Robot
         # after doing the first set of base_ten #'s; I should be able to skip
         # odd's
 
-        @skip_odds = true
+        #@skip_odds = true
         path_len = up ? path_len + 1 : path_len - 1
         base_ten = 0
       end
