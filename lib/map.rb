@@ -77,8 +77,14 @@ class Map
       (0 .. @width).each do |x_val|
         matrix_row << next_cell.call
       end
+      #matrix_row << Map.success
       @matrix << matrix_row
     end
+	#matrix_row = []
+	#(0 .. (@width + 1)).each do |x_val|
+	#	matrix_row[x_val] = Map.success
+	#end
+	#@matrix << matrix_row
   end
 
   #
@@ -92,12 +98,15 @@ class Map
   end
 
   def success(row,col)
+    #@matrix[row][col] == Map.success
     row > @width || col > @height
   end
 
   def done(row,col)
     return 1 if ( row > @width || col > @height )
+	#success(row,col) 
 	return 0 if @matrix[row][col] == Map.bomb
+	#fail(row,col) 
 	return -1
   end
 
@@ -155,6 +164,10 @@ class Map
 		return true
       end
     end # end-while
+  end
+
+  def self.success
+    'S' #made it to the border (assuming we expand the matrix...)
   end
 
   def self.boom
