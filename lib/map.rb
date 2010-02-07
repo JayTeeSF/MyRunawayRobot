@@ -71,7 +71,7 @@ class Map
   def construct_matrix
     next_cell = cell_generator
     clear_matrix
-    (0..height).each do |y_val|
+    (0..@height).each do |y_val|
       matrix_row = []
       (0 .. @width).each do |x_val|
         matrix_row << next_cell.call

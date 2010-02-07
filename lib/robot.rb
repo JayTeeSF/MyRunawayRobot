@@ -1,6 +1,6 @@
 require 'lib/map.rb'
 class Robot
-  attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug
+  attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix
 
   #
   # this method gives the robots its marching orders
@@ -20,23 +20,58 @@ class Robot
 
     @start_x = 0
     @start_y = 0
-    #@skip_odds = false #newest optimization
     @cache_off = options[:cache_off]
     @min = options[:ins_min]
     @max = options[:ins_max]
+	@map_terrain = options[:terrain_string]
+	@map_width = options[:board_x] - 1
+	@map_height = options[:board_x] - 1
     clear_path
 
-    @map.config(options)
-
-    @map.draw_matrix(@start_x, @start_y)
+    construct_matrix
     solve() if options[:only_config].nil?
   end
 
   def initialize(params={})
-    @map = Map.new params
     @debug = params[:debug]
     params.delete(:debug)
     instruct(params) if params != {}
+  end
+
+  def clear_matrix
+    @matrix = []
+  end
+
+  def construct_matrix
+    next_cell = cell_generator
+    clear_matrix
+    (0..@map_height).each do |y_val|
+      matrix_row = []
+      (0 .. @map_width).each do |x_val|
+        matrix_row << ('.' == next_cell.call ? 1 : 0 )
+      end
+      matrix_row << Robot.success
+      @matrix << matrix_row
+    end
+    matrix_row = []
+    (0 .. (@map_width + 1)).each do |x_val|
+      matrix_row[x_val] = Robot.success
+    end
+    @matrix << matrix_row
+  end
+
+  #
+  # return a char-by-char terrain iterator
+  # :terrain_string=>"..X...X.."
+  #
+  def cell_generator
+    terrain_ary = @map_terrain.split(//)
+    i = -1
+    lambda { i += 1; terrain_ary[i] }
+  end
+  
+  def self.success
+    2
   end
   
   def self.down
@@ -72,9 +107,6 @@ class Robot
     # (0 .. (n.size)).each { |slot| puts "slot: #{slot}: #{n[slot]}" }
 
     puts "solving..." if @debug
-    #next_move = path_generator
-    #even_move = path_generator(true,@min,mid())
-    #odd_move = path_generator(false,mid(),@max)
     next_move = []
     # even_move:
     mid_val = mid()
@@ -102,20 +134,8 @@ class Robot
     puts "trying path: #{@path.inspect}" if @debug
 
     until [] == @path || @map.verify(@start_x, @start_y,@path) do
-      #@map.known_bad_cycles << @path
-      #path_size = @path.size
-      #if path_size == @map.bad_cycle_len || (@map.bad_cycle_len.nil? && path_size >= Map::BAD_CYCLE_LEN)
-      #  @map.bad_cycle_len = path_size
-      #  @map.store_bad = true
-      #else
-# hmm: slow down
-#        @map.store_bad = false
-      #end
-      # overwrite path:
-      #@path = next_move.call
       idx = move_size > 0 ? count % move_size : 0
       @path = next_move[idx] ? next_move[idx].call||[] : []
-	  #nil
       count += 1
       while [] == @path && next_move.size > 0
         idx = move_size > 0 ? (count - 1) % move_size : 0
@@ -137,7 +157,7 @@ class Robot
 	end
 
     # save this path to our solutions 'cache' file, for future use
-    @map.save(min(),max(),path()) unless @cache_off
+    #@map.save(min(),max(),path()) unless @cache_off
   end
 
   #
@@ -169,11 +189,6 @@ class Robot
     lambda do
       base_ten += 1
       if base_ten > ((2 ** path_len) - 1)
-        # this just in...
-        # after doing the first set of base_ten #'s; I should be able to skip
-        # odd's
-
-        #@skip_odds = true
         path_len = up ? path_len + 1 : path_len - 1
         base_ten = 0
       end
