@@ -44,13 +44,31 @@ class Robot
     @matrix = []
   end
 
+  # human readable
+  def draw_matrix(row=nil,col=nil)
+    puts "called with row(#{row.inspect}), col(#{col.inspect})"
+    return unless @debug
+    construct_matrix unless @matrix
+    if (row && col)
+      # deep copy the array, before inserting our robot
+      matrix = Marshal.load(Marshal.dump(@matrix))
+      matrix[row][col] = (matrix[row][col] == Robot.bomb()) ? Robot.boom() : Robot.robot
+    else
+      matrix = @matrix
+    end
+
+    puts "\n#-->"
+    matrix.each {|current_row| puts "#{current_row}"}
+    puts "#<--\n"
+  end
+
   def construct_matrix
     next_cell = cell_generator
     clear_matrix
     (0..@map_height).each do |y_val|
       matrix_row = []
       (0 .. @map_width).each do |x_val|
-        matrix_row << ('.' == next_cell.call ? 1 : 0 )
+        matrix_row << ('.' == next_cell.call ? Robot.safe : Robot.bomb )
       end
       matrix_row << Robot.success
       @matrix << matrix_row
@@ -72,6 +90,22 @@ class Robot
     lambda { i += 1; terrain_ary[i] }
   end
   
+  def self.bomb
+    0
+  end
+
+  def self.safe
+    1
+  end
+
+  def self.boom
+    6
+  end
+
+  def self.robot
+    8
+  end
+
   def self.success
     2
   end
@@ -130,7 +164,9 @@ class Robot
 
     if [] == @path
 	  rstr = ""
-	  binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr).first
+	  debug_level = 0
+	  debug_level = 1 if @debug
+	  binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level).first
       @path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
 
       raise RuntimeError, "failed trying'" if [] == @path
@@ -181,7 +217,7 @@ class Robot
 		builder.include '<string.h>'
 		builder.include '<sys/types.h>'
 foo = <<-'YOOO'
-static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr) {
+static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug) {
   char* str = RSTRING_PTR(rstr);
   char* p;
   int c, x, y, j, i;
@@ -189,6 +225,9 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
   //int how_big;
   int path_len, mutable_base_ten, base_ten, max_base_ten;
   VALUE arr = rb_ary_new();
+  // ID method = rb_intern("draw_matrix");
+  if (! rb_respond_to(self, rb_intern("draw_matrix")))
+    rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
 
   for (path_len=min; path_len<=max; path_len++) {
     max_base_ten = ((1 << path_len) - 1);
@@ -244,6 +283,11 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
         x = 0, y = 0;
 
         //move-robot, till we crash or succeed
+        if (debug >= 1) {
+          printf("\n-- bgn initial map --\n");
+          rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(x), INT2FIX(y));
+          printf("-- end initial map --\n\n");
+        }
         count = 0;
         while ((y < (max_height-1)) && (x < (max_width -1))) {
           if (0 == (count % curr_len) ) {
@@ -265,13 +309,22 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
           cell_val = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[y])[x]);
           //printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
           //cell_val = RARRAY(RARRAY(matrix)->ptr[y])->ptr[x]
+
+          if (debug >= 1) {
+            rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(x), INT2FIX(y));
+          }
           if (0 == cell_val) {
             // crash
-            //printf("crash...\n");
+            if (debug >= 1) {
+              printf("crash...\n");
+            }
             break;
           } else if (2 == cell_val) {
             // success
             rb_ary_push(arr, rb_str_new2(str));
+            if (debug >= 1) {
+              printf("success\n");
+            }
             ////printf("success; freeing str...\n");
             //free(str);
             return arr;

@@ -2,6 +2,7 @@ require 'lib/robot'
 require 'yaml'
 # http://www.hacker.org/runaway/index.php
 require 'net/http'
+
 res = nil
 path = false
 USERNAME = 'jaytee'
@@ -11,6 +12,7 @@ PASSWORD = gets.chomp
 puts ""
 system "stty echo"
 DEFAULT_LEVEL = 0
+tries = 3
 print "Please enter a start-level [#{DEFAULT_LEVEL}]: "
 counter = (gets.chomp || DEFAULT_LEVEL).to_i
 puts ""
@@ -48,21 +50,45 @@ while true
   res = nil
   if path
     res = request(%Q|&path=#{path}|)
-    if res[/boom at (\d) (\d)<br>your solution sucked<br>/]
-      puts "solution sucked at: #{$1}, #{$2}"
-      break
-    end
   else
     res = request(%Q|&gotolevel=#{counter}|)
+  end
+  puts "checking reponse..."
+  if /you can\'t go to (\d+)\, only to (\d+)\!|boom at (\d+) (\d+)<br>your solution sucked<br>/.match(res.inspect.to_s)
+    puts "solution sucked at: #{$1}, #{$2}"
+    puts "bogus response was: #{res.to_s}"
+    exit
+  else
+    puts "ok"
   end
     
 
   # <PARAM NAME=FlashVars VALUE="FVterrainString=..X...X..&FVinsMax=2&FVinsMin=2&FVboardX=3&FVboardY=3&FVlevel=0">
   #<PARAM NAME=FlashVars VALUE="FVterrainString=..X...X..&FVinsMax=2&FVinsMin=2&FVboardX=3&FVboardY=3&FVlevel=1">
 
-  #puts "response: #{res.inspect}"
   param_name = res[/<PARAM NAME=(.*)>/,1]
   #puts "param_name: #{param_name.inspect}..."
+  if param_name.nil?
+    puts "bogus param_name from response: #{res.to_s}"
+    attempt = 1
+    while attempt <= tries
+      sleep 20
+      res = request(%Q|&gotolevel=#{counter}|)
+      param_name = res[/<PARAM NAME=(.*)>/,1]
+      if param_name || /you can\'t go to (\d+)\, only to (\d+)\!|boom at (\d+) (\d+)<br>your solution sucked<br>/.match(res.inspect.to_s)
+        puts "response: #{res.inspect}"
+        break
+      else
+        puts "bogus param_name from response: #{res.inspect}"
+        attempt += 1
+      end
+    end
+  end
+  if param_name.nil?
+    puts "failed to get a valid response...\n"
+    exit
+  end
+
   @params = {
     :terrain_string => param_name[/FVterrainString=([.|X]*)&/,1],
     :ins_max        => param_name[/FVinsMax=(\d*)&/,1].to_i,

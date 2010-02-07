@@ -1,3 +1,67 @@
+
+new smokin' fast inlined'c robot broke...
+(3 & 4)
+using: :terrain_string =>
+"..................X.....XXX...X....X...XX.X.......XXX...X...X......X.........X.X.X....XX.....X.X....X...XXX.X...X.....X......XX..............X...X.....X........X..XX......X....X.X....X......XX.XX..XX....X.............X..........X...X...X...X............X.XX.X.X.....X.X..X.X.X...X.X..X.X.XX..X...X...X...X...........X..X...X.X....X...X...X...XX.........X..X.X.XX...............X........XX..X....X....XXX...X.........X.......X...XX.XX..XX...X........X....X.....XXX......X...X.X.......X...........XXX..X.X..XXX...X.X.X.X.X.X.............X...X......XX...X..X.X.X...X........X..X....XX......X...X......XX.......X........XX.....X.....X....X.X....X....X...X.X.X...XX......X.............X.....X....X...X...........X....XX......XX....X...........X...X................X...X.....X.............X.X....X............X.......X.X....X.....XX...XXX..XX...X......X...XX............X..........X...XXX...X.....X.....X.......X.X...............X...X......X......XX..........X..X..X...X.......X....X........X..X.X....X.X.X.....X..X.X.X.XXX.X........XX.....X.....X.......X....X..X....XXX.X...X.X.......X..........................X.X......X.....X......X........XXX.............X...X..X.....X..X.XX.....X...X.....X..X....X.X...........X.X.X......X...X.........X..X.XX....X...X...X.............X....X.X...X.X.....XX...........XXX..........XX..X.X..X....X..XX...XX.................X..X.X..XXX.XX...XXX................XX..X.X.......X.......X.X.XX..........X.......X..X.....X..X....X..X.....X.X..X..XX.X..XX.....XX.XXX.................X......X................X.X...X......XX...X......................XX.....X...X...X.......XX.......XX.......XX...............X............X...X..........X..XX.........X.X.X.....................X.......X.X.X..XXX.....X..........XXX....X....X.....XX.X...XXX.....X..............X.XX........X.XX...................X.........X..X........X.XXX...X..XXX.....XXX.......X.....XXX...X..XX.X.XX.X.X...X.....XX...X.XXX.XX.X........X..X...X....X.......XXX.....X....X..X..X........X..X....XX........X......X......XX....X....X...XX.........X.X..X...............X.X...X.................XX..X..X..XX.XXX.X..........................X....X..X.X.........XX.............X.......XXX..X....XXX....X........X....X...X..........XX...X...X.........X...X........XX....XX.................X..XX....X..X.....X...........X.X...X..X...X....XX....X....X.X...X..X.X.XX.X.................X..X.....X..XXX..X...........X....X...XX.X..X..............X..X..X.......X....X..X..X.X...........X.X.......X..XX..XX..X....X.X..X.........X..X......X...XXX.X.XX......X.X........XX....X..X...XX.XX...........XX.X......................X......X....XXXX....XX...X....X.....XX...X.XX.XX...........XX..XX....XX...X.....X.X..X...........X...X....XX.....X..X.....X....X..............XX.X...X......X...XXX.XX..................X.XX.....X..X..X.X............X.X...X...................XXX......X.......X...XX....X.X.XX..X.X..X.........X.........X...X......XX.....X...X...XX............X..X.....X.X.....XXX............XXX.......X....XX...X..........X.......XX.......X.X...XX....X.X.X......X..........XX.XX.........XX.X......X...X..X......X...X....X..X.X..XX.......X.......X.................X.X...X.....X.......X....X.....X...X..................X.XX.X..X....X.............X..XX..X.......XX....XX...X.....XX.X...XXX...X..........X...........X...X.......X.X..X..X...X...X.X.X......X....X...X..X............X.X..X.X.X..X...X...X.X.....X..........XX....X.............XX........X.X.X.XX......X..X..X......X..X...X...X.X...X....X.X...XXX..X....",
+:ins_max => "34", :ins_min => "20", :board_x => "59", :board_y => "59", :level
+=> "112"...
+mid: 27
+112         [59,59]   (20..34)    RRRDDDRRDRDRRDRRRRDDDRDDRDDDRDDD  150.117775
+getting:
+www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&path=RRRDDDRRDRDRRDRRRRDDDRDDRDDDRDDD...
+got it.
+checking reponse...
+solution sucked at: , 
+o:MyRunawayRobot jlthomas$ ruby runaway.rb
+jaytee, please enter your password: 
+Please enter a start-level [0]: 112
+
+getting:
+www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&gotolevel=112...
+got it.
+checking reponse...
+ok
+using: :terrain_string =>
+"......X...........XX...XXX.X.......X........X.XXXXX......X.......X....X...XX.XX....XX.X..X.X...X...............X.X....................X.X.....X.X........X...X...................X...X.........X.XX............X.....X.....X.......X.........X......X...X....X...X.X..XX.....XX.X..X..........XX.XX....XX.....X..X......X...X......XX..X.XX.X..X....X......XX...X...............X.X..X.......XX.XXX...........X.X....X...X.XX......X........X.....XX..X.....X.X....X....X.X.X........X.X....X......X....X..X...X..........XX.......X....X.....XX..X....X.X.X....X....X.X..X..X.XX......X..X....X...XXX....XX..X...X...XX..........X...X.....X.X..X.........X..XX.X.X....X.XX.X.X...XX.X......X..X...X..X......XX.XX..X...........X..X.X.....X........X...........X.X....X.X..XX.X.....X........XXX............X.....X..XXX.....X..X..........X...X..X...........X..X.........X.......X.....X........XXXX..........X...X.XX......X..X..X..........X...XX........X..XXX...XX..X......X..XX....X................X.X....X...X......X....X....X..X.....X.........X.X.X...X.X.....X...X.......X..X..XX...XX.X.............XX......X...X.X..XX.....XX.......X.X.X...X..X.X..X.........XX.....X...X...XX.X....X......X..................X.X..XX.X....X..........X.......X.X..X....XX....X.X.XXXX......X..XXX............XX..X.....X..X...X.....X...X...X....X.....XX...X...............X.......X..X.............X...X...X...........X..X.X......................X......X.X...X.X...XX....XX...X.X..X..X....X....X..XXXX........XXXX..X..X..X.X.X....X.....X....X......XX..X.............XXXX..X........................X.XX..X.........X.X...XXX....X......X.X..XX...XX.X.....XX.......X..XX.......X.....X.......X.XX.X................X.....X.........X...X.X..X...X...X.X..X.XXX.....X..X....X......X....X.X..X..X...............X......X...X.....X..X...X..XX..X.XX.X....X.X..X.........XX.X.XX.XX.....X...X...X...X.....X.XX....X.........XX.XX..X...X......X...X.X.X...X.......X............X..........X...XXXX..................X.X.X.X....X.....X..............X...X.....XX...X....XX......X..X.X............X...X....X......X......X...X..X........X...X.X..X.X....X.X..X.X............XX.........X.......X....X.X..XX...X.X..XX.X...XX..X............X.X...X..........X..XX...X.X.XX..X.X.........X..XX..X.X....X..X.X..X.X.X.........X........X..X..........XX...X.XX.........X....X...XXX.X......XX............XX...X...X..XX.X..X..X.X...XX......X.........X.....X..X.X....X......X......X.X....XXX.......X......X.X..............XXX........X..X.....XX....X...X..X.....XXX........X.......X..X.XXX.X..X.....X.........X..X..X.........X.XX.....X...XX.............XX..........X...XXX.......X..........X..X.XX.X..X.X........X....X.X..X.X................XX..XX.........X..XX..X...X...XX......X......X..........X.X..X......X....XX.X.XXX......X.............X....X.XX.X..X..........X..XX..XXX..X......X..X.X...X.X..X...X....X.........X.X...XX.X..X....X.X...X.X........X....X..X..........X..XX.........X..X..XX....XXX..XX....XX...X.XX............X...XXX.........X....XX........X.......X.X..X.X..X.XX..........XX...X.X...X....X..X....X...XXX.X..X..X.X.......X.X.....X..X.............X.X..X..X...XX....XXX......XXX.X..XX........XXX..X.....XX.XX......X.......X..X.....XX.XX.......X.......XXX.......X.XX......XX..XXX...X........X......XX.....X.XX..............XX.X.X...XX.X..X...X.X.....X.X....X.........X....X..X....XX.X......X...X..........X...........X........XX.....X..X.......XX....X...X..XX..X..X.X..XXX.........X.........X...X.X.XX....XX..X.X...X....X..X..X......X.............X..",
+:ins_max => "34", :ins_min => "20", :board_x => "59", :board_y => "59", :level
+=> "112"...
+mid: 27
+112         [59,59]   (20..34)    RRDDDDDDDRRRDRRRRRDDRRDDRDRDRDD  175.202033
+getting:
+www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&path=RRDDDDDDDRRRDRRRRRDDRRDDRDRDRDD...
+
+
+--
+(2)
+ 43         [24,24]    (9..15)                       RRDDRRRDRRD  0.64955
+ getting:
+ www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&path=RRDDRRRDRRD...
+ got it.
+ using: :terrain_string =>
+ ".....X.XXX...XXX..X............................X...X..X....X..X.....X.X.X...X..........X.X.XX...XXXXX..XX............XXXX.XX.X..X.XXXX......X..........X..X.XX.XX..X.....X...X.X.X..XX..X..XXX.X...X...X....X..XXX...............X..X..XX........X....X......XX.....X......X.X...........XXX........XXX...X.XX....X.....X...XX....X..X.XX..X.........X....XX....X.X...........X....X........X..XXXX.......XXX.....X......X.X.......XXX.....XX..X.X..XX..X....XX...X...X.....X.X.....X..X.......X...X......X..X.XX..X.....X..XX...X.......XX.X.X.........XX....X..X....X..X.XX..X.X..X.X..X.X...........XX........X....X............X.X..X.X...XX.",
+ :ins_max => "15", :ins_min => "9", :board_x => "25", :board_y => "25", :level
+ => "44"...
+ mid: 12
+  44         [25,25]    (9..15)                   RRRRDRDRDDRRRDD  1.079438
+  getting:
+  www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&path=RRRRDRDRDDRRRDD...
+  got it.
+  #--> solution sucked at: 9, 6
+
+--(1)
+using: :terrain_string =>
+"....XXXX.XX........X...X.......X...X..XX.XX..........X..XX....X......X....X.......X..XX.X...XX................X..............X.....X...X...X............X.......X...X......X........X.....X......X.....XXXX..X.........X.....XX.X.XX.........X..X.X.X....XX..........X..........X.X........XXX.XX.X...X.X...X................X..............X.X..XXX...XXX.....X....XX.................X...XX...X.X.XXX......X....X.X.....X.X....X..X......X.X....X....X....X.X......XX.X..X.X.XXX........X....XXX.X....XX....X...X.X...XX...X......X....XX..XX....XX.X...XXX.....X.X......XX.XX..XX.X..X..X.X..",
+:ins_max => "15", :ins_min => "9", :board_x => "24", :board_y => "24", :level
+=> "43"...
+mid: 12
+ 43         [24,24]    (9..15)                   RRDDRRDDRRRRRRD  39.640283
+ getting:
+ www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&path=RRDDRRDDRRRRRRD...
+ got it.
+ runaway.rb:67:in `<main>': undefined method `[]' for nil:NilClass
+ (NoMethodError)
+
+---
 ruby robot_test.rb -n test_performance
 # --
 it failed due to timeout.
