@@ -31,22 +31,22 @@ class RobotTest < Test::Unit::TestCase
   end
 
   # determine if my path_generator works
-  def test_for_all_paths
-    puts "test_for_all_paths"
+  #def test_for_all_paths
+  #  puts "test_for_all_paths"
 
-    puts "setup impossible robot"
-    @robot = Robot.new @impossible_config
-    paths_retrieved  = []
-    next_move = @robot.path_generator
-    while true
-      got = next_move.call
-      puts "got: #{got}"
-      break if got.nil?
-      paths_retrieved << got
-    end
-    puts "paths_retrieved: #{paths_retrieved.inspect}"
-    assert_equal([['D'],['R']], paths_retrieved)
-  end
+  #  puts "setup impossible robot"
+  #  @robot = Robot.new @impossible_config
+  #  paths_retrieved  = []
+  #  next_move = @robot.path_generator
+  #  while true
+  #    got = next_move.call
+  #    puts "got: #{got}"
+  #    break if got.nil?
+  #    paths_retrieved << got
+  #  end
+  #  puts "paths_retrieved: #{paths_retrieved.inspect}"
+  #  assert_equal([['D'],['R']], paths_retrieved)
+  #end
 
   # eventually we need an expected time associated with this
   def test_performance
