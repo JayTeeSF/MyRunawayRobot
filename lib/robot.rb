@@ -90,47 +90,51 @@ class Robot
 
     # first check if we've already got a solution to this map...
     count = 0
-    @path = map.lookup_solution(min(),max())
-    if @path
+    @path = map.lookup_solution(min(),max()) || []
+    if [] == @path
+      idx = move_size > 0 ? count % move_size : 0
+      @path = next_move[idx] ? next_move[idx].call||[] : []
+      count += 1
+    else
       puts "found previous solution" #if @debug
       return
-    else
-      idx = move_size > 0 ? count % move_size : 0
-      @path = next_move[idx] ? next_move[idx].call : nil
-      count += 1
     end
     puts "trying path: #{@path.inspect}" if @debug
 
-    until @path.nil? || @map.verify(@start_x, @start_y,@path) do
+    until [] == @path || @map.verify(@start_x, @start_y,@path) do
       #@map.known_bad_cycles << @path
       #path_size = @path.size
       #if path_size == @map.bad_cycle_len || (@map.bad_cycle_len.nil? && path_size >= Map::BAD_CYCLE_LEN)
       #  @map.bad_cycle_len = path_size
       #  @map.store_bad = true
       #else
-        @map.store_bad = false
+# hmm: slow down
+#        @map.store_bad = false
       #end
       # overwrite path:
       #@path = next_move.call
       idx = move_size > 0 ? count % move_size : 0
-      @path = next_move[idx] ? next_move[idx].call : nil
+      @path = next_move[idx] ? next_move[idx].call||[] : []
+	  #nil
       count += 1
-      while @path.nil? && next_move.size > 0
+      while [] == @path && next_move.size > 0
         idx = move_size > 0 ? (count - 1) % move_size : 0
         next_move.delete_at(idx)
         move_size = next_move.size
         puts "at least one of the move-generators has yielded a nil; trying next"
         idx = move_size > 0 ? count % move_size : 0
-        @path = next_move[idx] ? next_move[idx].call : nil
+        @path = next_move[idx] ? next_move[idx].call||[] : []
         puts "new path: #{@path.inspect}"
       end
       puts "trying path: #{@path.inspect}" if @debug
     end
 
-    raise RuntimeError, "failed trying'" if @path.nil?
+    raise RuntimeError, "failed trying'" if [] == @path
 
     # if we got this far then we were successful
-    puts "solved." if @debug
+	if @debug
+    	puts "solved."
+	end
 
     # save this path to our solutions 'cache' file, for future use
     @map.save(min(),max(),path()) unless @cache_off
@@ -164,9 +168,6 @@ class Robot
 
     lambda do
       base_ten += 1
-      if @skip_odds && ((base_ten % 2) == 1)
-        base_ten += 1
-      end
       if base_ten > ((2 ** path_len) - 1)
         # this just in...
         # after doing the first set of base_ten #'s; I should be able to skip

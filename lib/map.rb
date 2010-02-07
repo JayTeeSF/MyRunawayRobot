@@ -2,7 +2,8 @@ class Map
   BAD_CYCLE_LEN = 5
   #BAD_CYCLE_LEN = 3
   @@solutions = './solutions.txt'
-  attr_accessor :height, :width, :terrain, :matrix, :debug, :known_bad_cycles, :use_known_bad, :store_bad, :check_bad, :bad_cycle_len
+  attr_accessor :height, :width, :terrain, :matrix, :debug
+  #, :known_bad_cycles, :use_known_bad, :store_bad, :check_bad, :bad_cycle_len
 
   def initialize(options={})
     @debug = options[:debug]
@@ -32,13 +33,13 @@ class Map
     @terrain = options[:terrain_string]
     @width = options[:board_x] - 1
     @height = options[:board_y] - 1
-    @known_bad_cycles = []
-    bad_cycle_len = nil
+    #@known_bad_cycles = []
+    #bad_cycle_len = nil
 
     # apparently this feature slows us down!!!
-    @store_bad = false
-    @use_known_bad = options[:use_known_bad] || true
-    @check_bad = @use_known_bad
+    #@store_bad = false
+    #@use_known_bad = options[:use_known_bad] || false
+    #@check_bad = @use_known_bad
 
     construct_matrix
   end
@@ -64,7 +65,7 @@ class Map
     end
 
     puts "\n#-->"
-    matrix.each {|row| puts "#{row}"}
+    matrix.each {|current_row| puts "#{current_row}"}
     puts "#<--\n"
   end
 
@@ -93,38 +94,41 @@ class Map
   def success(row,col)
     row > @width || col > @height
   end
+
+  def done(row,col)
+    return 1 if ( row > @width || col > @height )
+	return 0 if @matrix[row][col] == Map.bomb
+	return -1
+  end
+
   def fail(row,col)
     @matrix[row][col] == Map.bomb
   end
 
-  def known_bad?(path_ary=nil)
-    return true unless path_ary
-    @known_bad_cycles.each do |cycle|
-      max_idx = cycle.size - 1
-      if path_ary[0..max_idx] == cycle
-        puts "found bad cycle (#{cycle}) in #{path_ary}..." if @debug
-        return true
-      end
-    end
-    #puts "didn't find bad cycle...[#{@known_bad_cycles.inspect} vs.  #{path_ary.inspect}]"
-    return false
-  end
+  #def known_bad?(path_ary=nil)
+  #  return true unless path_ary
+  #  @known_bad_cycles.each do |cycle|
+  #    max_idx = cycle.size - 1
+  #    if path_ary[0..max_idx] == cycle
+  #      puts "found bad cycle (#{cycle}) in #{path_ary}..." if @debug
+  #      return true
+  #    end
+  #  end
+  #  #puts "didn't find bad cycle...[#{@known_bad_cycles.inspect} vs.  #{path_ary.inspect}]"
+  #  return false
+  #end
 
   #
   # return a string of robot directions
   #
   def verify(row=0, col=0, path_ary=[])
-    if @check_bad
-      return false if known_bad?(path_ary)
-    end
+    return false if [] == path_ary
     construct_matrix unless @matrix
-    puts "verifying path: #{path_ary.inspect}..." if @debug
+    if @debug
+    	puts "verifying path: #{path_ary.inspect}..."
+    end
 
-    verified = nil
-    cycle_count = 1
     while true
-    #!success(row,col) && !fail(row,col)
-
       path_ary.each do |move|
         case move
           when Robot.down
@@ -133,49 +137,24 @@ class Map
         end #end-case
 
         # TODO: refactor this so we don't _also_ exit from within the loop
-        if success(row,col)
-          verified = true
-          return verified
-        elsif fail(row,col)
-          verified = false
-          if @store_bad
-            bad_cycle = []
-            cycle_count.times {bad_cycle << path_ary}
-            bad_cycle.flatten!
-            #puts "appending bad_cycle: #{bad_cycle.inspect}..."
-            @known_bad_cycles << bad_cycle
-          end
-          return verified
+        done_status = done(row,col)
+        if done_status > -1
+			return false if done_status == 0
+			return true
         end
         #break unless verified.nil?
-        draw_matrix(row,col)
+    	if @debug
+        	draw_matrix(row,col)
+    	end
       end # end-each
-      cycle_count += 1
+      #cycle_count += 1
 
-      if success(row,col)
-        verified = true
-          return verified
-      elsif fail(row,col)
-        verified = false
-          if @store_bad
-            bad_cycle = []
-            cycle_count.times {bad_cycle << path_ary}
-            bad_cycle.flatten!
-            #puts "appending bad_cycle: #{bad_cycle.inspect}..."
-            @known_bad_cycles << bad_cycle
-          end
-          return verified
+      done_status = done(row,col)
+      if done_status > -1
+		return false if done_status == 0
+		return true
       end
-      #break unless verified.nil?
     end # end-while
-
-
-    #if verified
-    #  puts "passed verification" if @debug
-    #else
-    #  puts "failed verification" if @debug
-    #end
-    #return verified
   end
 
   def self.boom
