@@ -1,6 +1,5 @@
 class Map
-  BAD_CYCLE_LEN = 5
-  #BAD_CYCLE_LEN = 3
+  # BAD_CYCLE_LEN = 5
   @@solutions = './solutions.txt'
   attr_accessor :height, :width, :terrain, :matrix, :debug
   #, :known_bad_cycles, :use_known_bad, :store_bad, :check_bad, :bad_cycle_len
