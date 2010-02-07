@@ -1,4 +1,6 @@
-require 'lib/map.rb'
+require 'rubygems'
+require 'inline'
+#require 'lib/map.rb'
 class Robot
   attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix
 
@@ -111,45 +113,35 @@ class Robot
     # even_move:
     mid_val = mid()
     if mid_val > @min
-      next_move << path_generator(true,@min,mid_val)
-      if @max > mid_val
-        mid_val += 1
-      end
+      # TBD: append to thread_ary
+      #next_move << path_generator(true,@min,mid_val)
+      #if @max > mid_val
+      #  mid_val += 1
+      #end
     end
     # odd_move:
-    next_move << path_generator(true,mid_val,@max)
-    move_size = next_move.size
+    #next_move << path_generator(true,mid_val,@max)
+    #move_size = next_move.size
 
     # first check if we've already got a solution to this map...
-    count = 0
-    @path = map.lookup_solution(min(),max()) || []
+    #count = 0
+    #@path = map.lookup_solution(min(),max()) || []
+    @path = []
+
     if [] == @path
-      idx = move_size > 0 ? count % move_size : 0
-      @path = next_move[idx] ? next_move[idx].call||[] : []
-      count += 1
+	  rstr = ""
+	  binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr).first
+      @path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
+
+      raise RuntimeError, "failed trying'" if [] == @path
+      puts "got path: #{@path.inspect}" if @debug
+      #idx = move_size > 0 ? count % move_size : 0
+      #@path = next_move[idx] ? next_move[idx].call||[] : []
+      #count += 1
     else
       puts "found previous solution" #if @debug
       return
     end
-    puts "trying path: #{@path.inspect}" if @debug
-
-    until [] == @path || @map.verify(@start_x, @start_y,@path) do
-      idx = move_size > 0 ? count % move_size : 0
-      @path = next_move[idx] ? next_move[idx].call||[] : []
-      count += 1
-      while [] == @path && next_move.size > 0
-        idx = move_size > 0 ? (count - 1) % move_size : 0
-        next_move.delete_at(idx)
-        move_size = next_move.size
-        puts "at least one of the move-generators has yielded a nil; trying next"
-        idx = move_size > 0 ? count % move_size : 0
-        @path = next_move[idx] ? next_move[idx].call||[] : []
-        puts "new path: #{@path.inspect}"
-      end
-      puts "trying path: #{@path.inspect}" if @debug
-    end
-
-    raise RuntimeError, "failed trying'" if [] == @path
 
     # if we got this far then we were successful
 	if @debug
@@ -177,47 +169,125 @@ class Robot
   end
 
   #
-  # returns a lambda that keeps track & returns the next-possible 'path'
-  #
-  def path_generator(up=true,min=@min,max=@max)
-    puts up ? "up from #{min} to #{max}" : "down from #{max} to #{min}"
-    path_len = up ? min : max
-
-    # we start at negative one ...but this gets incremented to 0
-    base_ten = -1
-
-    lambda do
-      base_ten += 1
-      if base_ten > ((2 ** path_len) - 1)
-        path_len = up ? path_len + 1 : path_len - 1
-        base_ten = 0
-      end
-
-      if (up && path_len <= max) || ((! up) && path_len >= min)
-        # returns a path:
-        binary_to_path(generate_binary(path_len, base_ten))
-      else
-        # all done
-        nil
-      end
-    end
-  end
-
-  #
-  # turn base-10 integer => binary ary
-  #
-  def generate_binary(num_digits, num)
-    # append 0's if num.size is too small
-    puts "generating #{num_digits} digit binary of #{num}..." if @debug
-    (1 .. num_digits).map { |slot| num[(slot - 1)]||0 }
-  end
-
-  #
   # substitute R's & D's for 1's and 0's
   #
   def binary_to_path(binary_ary)
     puts "transforming binary: #{binary_ary.join}..." if @debug
-    binary_ary.map {|digit| (digit == 0)? Robot.down() : Robot.right() }
+    binary_ary.map {|digit| (digit.to_s == "0")? Robot.down() : Robot.right() }
   end
+
+	inline(:C) do |builder|
+		builder.include '<stdio.h>'
+		builder.include '<string.h>'
+		builder.include '<sys/types.h>'
+foo = <<-'YOOO'
+static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr) {
+  char* str = RSTRING_PTR(rstr);
+  char* p;
+  int c, x, y, j, i;
+  int cell_val, curr_len, count,  num_zeros;
+  //int how_big;
+  int path_len, mutable_base_ten, base_ten, max_base_ten;
+  VALUE arr = rb_ary_new();
+
+  for (path_len=min; path_len<=max; path_len++) {
+    max_base_ten = ((1 << path_len) - 1);
+    for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
+      mutable_base_ten = base_ten;
+      //str = malloc( sizeof(long)*8*sizeof(char) );
+      //how_big = ( sizeof(int)*path_len*sizeof(char) );
+      ////printf("mallocing a str that is %d bytes\n",how_big);
+      //str = malloc( how_big );
+      p = str;
+
+      curr_len = 0;
+      // convert int to binary:
+      while (mutable_base_ten>0) {
+        curr_len++;
+        ////printf("mutating bten: %d\n",mutable_base_ten);
+        /* bitwise AND operation with the last bit */
+        (mutable_base_ten & 0x1) ? (*p++='1') : (*p++='0');
+        /* big shift right */
+        mutable_base_ten >>= 1;
+      }
+      if (0 == base_ten) {
+        curr_len++;
+        (*p++='0');
+      }
+
+      num_zeros = 0;
+      //printf("path_len(%d) vs. curr_len(%d)\n",path_len,curr_len);
+      if (path_len > curr_len) {
+        num_zeros = path_len - curr_len;
+        //printf("appending %d 0's to str\n",num_zeros);
+      }
+      for (i = 0; i < num_zeros; i++) {
+        curr_len++;
+        (*p++='0');
+      }
+      ////printf("done mutating bten: %d\n",mutable_base_ten);
+
+      // reset p to beginning of str:
+      p = str;
+
+      //reverse:
+      for (x=0, j=strlen(str)-1; x<j; x++, j--)
+        c = str[x], str[x] = str[j], str[j] = c;
+
+        //printf("base_ten(%d) resulted in str (%s) of len: %d\n",base_ten,str,curr_len);
+
+        //verify path, convert-it to a ruby-array and return
+        //OR
+        //loop to the next num...
+
+        //init robot-location:
+        x = 0, y = 0;
+
+        //move-robot, till we crash or succeed
+        count = 0;
+        while ((y < (max_height-1)) && (x < (max_width -1))) {
+          if (0 == (count % curr_len) ) {
+            // reset p to beginning of str:
+            p = str;
+          }
+          count++;
+          if ('0' == *p) {
+            //printf("p is 0\n");
+            y++;
+          } else if ('1' == *p) {
+            //printf("p is 1\n");
+            x++;
+          } else {
+            //printf("got a bogus p value\n");
+          }
+          p++;
+
+          cell_val = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[y])[x]);
+          //printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
+          //cell_val = RARRAY(RARRAY(matrix)->ptr[y])->ptr[x]
+          if (0 == cell_val) {
+            // crash
+            //printf("crash...\n");
+            break;
+          } else if (2 == cell_val) {
+            // success
+            rb_ary_push(arr, rb_str_new2(str));
+            ////printf("success; freeing str...\n");
+            //free(str);
+            return arr;
+          }
+        }
+
+        ////printf("freeing str...\n");
+        //free(str);
+      }
+    }
+
+	// if we got here, then we return an empty array
+	return arr;
+}
+YOOO
+		builder.c foo
+	end
 
 end
