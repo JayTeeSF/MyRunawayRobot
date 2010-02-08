@@ -312,6 +312,7 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
         c = str[x], str[x] = str[j], str[j] = c;
 
       //once we get to palindrome_start then start checking for palindromes
+      palindrome = 0;
       if (curr_len > palindrome_start) {
         // check if it's even
         palindrome = 1;
@@ -369,11 +370,11 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
           p++;
 
           cell_val = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[y])[x]);
-          //printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
+          printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
           //cell_val = RARRAY(RARRAY(matrix)->ptr[y])->ptr[x]
 
           if (debug >= 1) {
-            rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(x), INT2FIX(y));
+            rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
           }
           if (0 == cell_val) {
             // crash
