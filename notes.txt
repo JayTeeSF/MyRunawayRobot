@@ -1,3 +1,33 @@
+load 'gen_bin.rb'
+g = GenBin.doIt(3,3)
+g = GenBin.doIt(2333,13)
+
+new threaded version:
+(2)
+:terrain_string =>
+".X.........X..X..........XX...X...XX..............XX....X...XX...X.X.X.XXXXX...X..X.......X.....................X.X...X....XX..X............X...X........X...X.X...............X......X...XX.X...X.X....XX..X.XX.X.........X.X...X....X.........X..X.X.X..X...XXX...XX.....XXX..X....X....X.....X..X.X......X.XXX.....X..X.X.X..XX..XX..X.X..X.X..X.XX.......XX......XX..X..XX....X.XXX...X..X.......X.XXX..XX.....X...XX..X.X..X....XX.X.X...X.X....X.X.",
+:ins_max => "13", :ins_min => "8", :board_x => "21", :board_y => "21", :level
+=> "36"...
+mid: 10
+ 36         [21,21]    (8..13)                   DDDRDDRDDDRRRDR  59.114247
+ getting:
+ www.hacker.org/runaway/index.php?name=jaytee&password=qwerty&path=DDDRDDRDDDRRRDR...
+ got it.
+ checking reponse...
+ ok
+ bogus param_name from response: not in range 8 13<br>your solution
+ sucked<br><a href=index.php?PHPSESSID=daecc9c202b1cc78f420be627245d6bc>back
+ to puzzle</a>
+
+(1)
+bug detecting palindromes AND detecting even length binary's...
+i.e.:
+CRASH... base_ten(3) resulted in str (01011) of len: 2 (suppose to be: 2)
+skipping a palindrome(11000)...
+dealing with an even number of digits; check for palindrome...
+skipping a palindrome(00000)...
+
+
 
 new smokin' fast inlined'c robot broke...
 (3 & 4)

@@ -49,8 +49,8 @@ class Robot
   # human readable
   def draw_matrix(row=nil,col=nil)
     @lock.synchronize {
+    #return unless @debug
     puts "called with row(#{row.inspect}), col(#{col.inspect})"
-    return unless @debug
     construct_matrix unless @matrix
     if (row && col)
       # deep copy the array, before inserting our robot
@@ -135,6 +135,7 @@ class Robot
   # to D's & R's is easy
   #
   def solve
+  use_threads = false
     # given an 'n' between min & max
     # total possible results: 2**n
     # a path can be constructed from binary values ranging from n-0's  .. n-1's
@@ -167,25 +168,24 @@ class Robot
     @path = []
 
     if [] == @path
-	  rstr = ""
 	  debug_level = 0
 	  debug_level = 1 if @debug
       palindrome_start = @min * 2;
       thread_ary = []
+    if use_threads
       if mid_val > @min
-	    #binary_str = get_binaries(@min,mid_val,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level,palindrome_start).first
-        thread_ary[thread_ary.size] = Thread.new {Thread.current["binary_str"] = get_binaries(@min,mid_val,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level,palindrome_start).first }
+	    #binary_str =
+		get_binaries(@min,mid_val,@matrix.size-1,@matrix[0].size-1, @matrix,debug_level).first
+        thread_ary[thread_ary.size] = Thread.new {
+		Thread.current["binary_str"] = get_binaries(@min,mid_val,@matrix.size-1,@matrix[0].size-1, @matrix,debug_level).first }
         if @max > mid_val
           mid_val += 1
         end
       end
-      thread_ary[thread_ary.size] = Thread.new {Thread.current["binary_str"] = get_binaries(mid_val,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level,palindrome_start).first }
-	  #former 2lines:
-	  #binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level, palindrome_start).first
-      #@path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
-	  while thread_ary.size > 0
-	    break if @path.size > 0
-	    sleep 1
+      thread_ary[thread_ary.size] = Thread.new {
+	  Thread.current["binary_str"] = get_binaries(mid_val,@max,@matrix.size-1,@matrix[0].size-1, @matrix,debug_level).first }
+	  while [] == @path && thread_ary.size > 0
+	    sleep 0.01
 	    thread_ary.each_with_index do |thr,i|
 	      if ! thr.status
 	        thread_ary.delete(i)
@@ -193,6 +193,13 @@ class Robot
 
 	          #got what we wanted
               @path = binary_to_path( thr["binary_str"].split(//) )
+              path_size = @path.size
+              if path_size > @max
+                tmp_path = @path[(path_size - max)..(path_size - 1)]
+                puts "surgery... trimming #{@path.to_s} => #{tmp_path.to_s}"
+                @path = tmp_path
+              end
+              puts "got path: #{@path}\n";
 
 	          break
 	        end
@@ -202,6 +209,11 @@ class Robot
 
 	  #kill all other threads
 	  thread_ary.each {|thr| Thread.kill(thr) }
+    else
+	  #former 2-lines:
+	  binary_str = get_binaries(@min,@max,@matrix.size-1,@matrix[0].size-1, @matrix, debug_level ).first
+      @path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
+    end
 
       raise RuntimeError, "failed trying'" if [] == @path
       puts "got path: #{@path.inspect}" if @debug
@@ -246,25 +258,29 @@ class Robot
     binary_ary.map {|digit| (digit.to_s == "0")? Robot.down() : Robot.right() }
   end
 
+# static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug, int palindrome_start) 
+
 	inline(:C) do |builder|
 		builder.include '<stdio.h>'
 		builder.include '<string.h>'
 		builder.include '<sys/types.h>'
 foo = <<-'YOOO'
-static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug, int palindrome_start) {
-  char* str = RSTRING_PTR(rstr);
+static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, int debug) {
+  //VALUE rstr = rb_str_new2("");
+  char* str;
   char* p;
-  char* p2;
   int c, x, y, j, i;
   int cell_val, curr_len, count,  num_zeros;
-  //int how_big;
-  int path_len, mutable_base_ten, base_ten, max_base_ten, palindrome, tmp_int;
+  int how_big = ( sizeof(int)*sizeof(char) );
+  int path_len, mutable_base_ten, base_ten, max_base_ten;
+  //char* p2;
+  //int palindrome, tmp_int;
   VALUE arr = rb_ary_new();
   // ID method = rb_intern("draw_matrix");
   if (! rb_respond_to(self, rb_intern("draw_matrix")))
     rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
 
-  //// this value should probably be passed-in
+  // // this value should probably be passed-in
   //palindrome_start = min * 2;
 
   for (path_len=min; path_len<=max; path_len++) {
@@ -272,53 +288,60 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
       mutable_base_ten = base_ten;
       //str = malloc( sizeof(long)*8*sizeof(char) );
+      //how_many = ( sizeof(int)*path_len*sizeof(char) );
       //how_big = ( sizeof(int)*path_len*sizeof(char) );
-      ////printf("mallocing a str that is %d bytes\n",how_big);
-      //str = malloc( how_big );
+      // //printf("mallocing a str that is %d bytes\n",how_big);
+      str = calloc( path_len + 1, how_big );
+	  // need to reset this to blank...
+  //str = RSTRING_PTR(rstr);
+      // *str = '\0';
       p = str;
 
       curr_len = 0;
       // convert int to binary:
-      while (mutable_base_ten>0) {
-        curr_len++;
-        ////printf("mutating bten: %d\n",mutable_base_ten);
-        /* bitwise AND operation with the last bit */
-        (mutable_base_ten & 0x1) ? (*p++='1') : (*p++='0');
-        /* big shift right */
-        mutable_base_ten >>= 1;
-      }
       if (0 == base_ten) {
         curr_len++;
         (*p++='0');
+      } else {
+        while (mutable_base_ten>0) {
+          curr_len++;
+          // //printf("mutating bten: %d\n",mutable_base_ten);
+          /* bitwise AND operation with the last bit */
+          (mutable_base_ten & 0x1) ? (*p++='1') : (*p++='0');
+          /* big shift right */
+          mutable_base_ten >>= 1;
+        }
       }
+      // //printf("done mutating bten: %d\n",mutable_base_ten);
 
+      //append zero's if necessary
       num_zeros = 0;
       //printf("path_len(%d) vs. curr_len(%d)\n",path_len,curr_len);
       if (path_len > curr_len) {
         num_zeros = path_len - curr_len;
-        //printf("appending %d 0's to str\n",num_zeros);
+        //printf("appending %d 0's to str(%s)\n",num_zeros,str);
       }
       for (i = 0; i < num_zeros; i++) {
         curr_len++;
         (*p++='0');
       }
-      ////printf("done mutating bten: %d\n",mutable_base_ten);
 
       // reset p to beginning of str:
       p = str;
 
 
       //reverse:
-      for (x=0, j=strlen(str)-1; x<j; x++, j--)
-        c = str[x], str[x] = str[j], str[j] = c;
+      for (x=0, j=strlen(p)-1; x<j; x++, j--)
+        c = p[x], p[x] = p[j], p[j] = c;
 
+/**
       //once we get to palindrome_start then start checking for palindromes
       palindrome = 0;
       if (curr_len > palindrome_start) {
         // check if it's even
-        palindrome = 1;
         tmp_int = curr_len / 2;
         if ((tmp_int * 2) == curr_len) {
+          palindrome = 1;
           printf("dealing with an even number of digits; check for palindrome...\n");
           // break, if the number is a palindrome:
           p2 = str;
@@ -336,7 +359,7 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
       	printf("skipping a palindrome(%s)...\n",str);
       	break;
       }
-
+*/
         //printf("base_ten(%d) resulted in str (%s) of len: %d\n",base_ten,str,curr_len);
 
         //verify path, convert-it to a ruby-array and return
@@ -349,12 +372,13 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
         //move-robot, till we crash or succeed
         if (debug >= 1) {
           printf("\n-- bgn initial map --\n");
-          rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(x), INT2FIX(y));
+          rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
           printf("-- end initial map --\n\n");
         }
         count = 0;
-        while ((y < (max_height-1)) && (x < (max_width -1))) {
+        while ( (y < max_height) && (x < max_width) ) {
           if (0 == (count % curr_len) ) {
+            // starting a cycle-through this binary #
             // reset p to beginning of str:
             p = str;
           }
@@ -366,12 +390,12 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
             //printf("p is 1\n");
             x++;
           } else {
-            //printf("got a bogus p value\n");
+            printf("got a bogus p value\n");
           }
           p++;
 
           cell_val = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[y])[x]);
-          printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
+          //printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
           //cell_val = RARRAY(RARRAY(matrix)->ptr[y])->ptr[x]
 
           if (debug >= 1) {
@@ -387,20 +411,18 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
             // success
             rb_ary_push(arr, rb_str_new2(str));
             if (debug >= 1) {
-              //printf("success\n");
               printf("MADE-IT... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
+            //rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
             }
-            ////printf("success; freeing str...\n");
-            //free(str);
+            free(str);
             return arr;
           }
         }
-
-        ////printf("freeing str...\n");
-        //free(str);
+		free(str);
       }
     }
 
+    //free(str);
 	// if we got here, then we return an empty array
 	return arr;
 }
