@@ -271,17 +271,22 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
   char* p;
   int c, x, y, j, i;
   int cell_val, curr_len, count,  num_zeros;
+  int right_cell, left_cell;
   int how_big = ( sizeof(int)*sizeof(char) );
   int path_len, mutable_base_ten, base_ten, max_base_ten;
+  VALUE arr = rb_ary_new();
   //char* p2;
   //int palindrome, tmp_int;
-  VALUE arr = rb_ary_new();
   // ID method = rb_intern("draw_matrix");
   if (! rb_respond_to(self, rb_intern("draw_matrix")))
     rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
 
   // // this value should probably be passed-in
   //palindrome_start = min * 2;
+
+  // before any loops...
+  right_cell = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[0])[1]);
+  left_cell = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[1])[0]);
 
   for (path_len=min; path_len<=max; path_len++) {
     max_base_ten = ((1 << path_len) - 1);
@@ -333,7 +338,14 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
       //reverse:
       for (x=0, j=strlen(p)-1; x<j; x++, j--)
         c = p[x], p[x] = p[j], p[j] = c;
-
+      if (
+	  ( (0 == right_cell) && ('1' == *p) )
+      || ( ( 0 == left_cell ) && ('0' == *p) )
+      ) {
+      	break;
+      }
+/**
+*/
 /**
       //once we get to palindrome_start then start checking for palindromes
       palindrome = 0;
