@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'inline'
+require 'thread'  # For Mutex class in Ruby 1.8
 #require 'lib/map.rb'
 class Robot
   attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix
@@ -36,6 +37,7 @@ class Robot
 
   def initialize(params={})
     @debug = params[:debug]
+    @lock = Mutex.new  # For thread safety
     params.delete(:debug)
     instruct(params) if params != {}
   end
@@ -46,6 +48,7 @@ class Robot
 
   # human readable
   def draw_matrix(row=nil,col=nil)
+    @lock.synchronize {
     puts "called with row(#{row.inspect}), col(#{col.inspect})"
     return unless @debug
     construct_matrix unless @matrix
@@ -60,6 +63,7 @@ class Robot
     puts "\n#-->"
     matrix.each {|current_row| puts "#{current_row}"}
     puts "#<--\n"
+    }
   end
 
   def construct_matrix
@@ -166,8 +170,37 @@ class Robot
 	  rstr = ""
 	  debug_level = 0
 	  debug_level = 1 if @debug
-	  binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level).first
-      @path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
+      palindrome_start = @min * 2;
+      thread_ary = []
+      if mid_val > @min
+	    #binary_str = get_binaries(@min,mid_val,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level,palindrome_start).first
+        thread_ary[thread_ary.size] = Thread.new {Thread.current["binary_str"] = get_binaries(@min,mid_val,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level,palindrome_start).first }
+        if @max > mid_val
+          mid_val += 1
+        end
+      end
+      thread_ary[thread_ary.size] = Thread.new {Thread.current["binary_str"] = get_binaries(mid_val,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level,palindrome_start).first }
+	  #former 2lines:
+	  #binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level, palindrome_start).first
+      #@path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
+	  while thread_ary.size > 0
+	    sleep 1
+	    thread_ary.each_with_index do |thr,i|
+	      if ! thr.status
+	        thread_ary.delete(i)
+	        if thr && thr["binary_str"]
+
+	          #got what we wanted
+              @path = binary_to_path( thr["binary_str"].split(//) )
+
+	          break
+	        end
+	      end
+	    end
+	  end
+
+	  #kill all other threads
+	  thread_ary.each {|thr| Thread.kill(thr) }
 
       raise RuntimeError, "failed trying'" if [] == @path
       puts "got path: #{@path.inspect}" if @debug
@@ -217,7 +250,7 @@ class Robot
 		builder.include '<string.h>'
 		builder.include '<sys/types.h>'
 foo = <<-'YOOO'
-static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug) {
+static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug, int palindrome_start) {
   char* str = RSTRING_PTR(rstr);
   char* p;
   char* p2;
@@ -229,6 +262,9 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
   // ID method = rb_intern("draw_matrix");
   if (! rb_respond_to(self, rb_intern("draw_matrix")))
     rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
+
+  //// this value should probably be passed-in
+  //palindrome_start = min * 2;
 
   for (path_len=min; path_len<=max; path_len++) {
     max_base_ten = ((1 << path_len) - 1);
@@ -275,20 +311,23 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
       for (x=0, j=strlen(str)-1; x<j; x++, j--)
         c = str[x], str[x] = str[j], str[j] = c;
 
-      // check if it's even
-      palindrome = 1;
-      if ('0' == *p) {
-        printf("dealing with an even number; checking for palindrome...\n");
-        // break, if the number is a palindrome:
+      //once we get to palindrome_start then start checking for palindromes
+      if (curr_len > palindrome_start) {
+        // check if it's even
+        palindrome = 1;
         tmp_int = curr_len / 2;
-        p2 = str;
-        p2 += tmp_int;
-        for (i=0; i<tmp_int; i++) {
-          if (*p != *p2) {
-          	palindrome = 0;
-          	break;
+        if ((tmp_int * 2) == curr_len) {
+          printf("dealing with an even number of digits; check for palindrome...\n");
+          // break, if the number is a palindrome:
+          p2 = str;
+          p2 += tmp_int;
+          for (i=0; i<tmp_int; i++) {
+            if (*p != *p2) {
+          	  palindrome = 0;
+          	  break;
+            }
+            p++,p2++;
           }
-          p++,p2++;
         }
       }
       if (1 == palindrome) {
@@ -338,17 +377,17 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
           }
           if (0 == cell_val) {
             // crash
-            //if (debug >= 1) {
+            if (debug >= 1) {
               printf("CRASH... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
-            //}
+            }
             break;
           } else if (2 == cell_val) {
             // success
             rb_ary_push(arr, rb_str_new2(str));
-            //if (debug >= 1) {
+            if (debug >= 1) {
               //printf("success\n");
               printf("MADE-IT... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
-            //}
+            }
             ////printf("success; freeing str...\n");
             //free(str);
             return arr;
