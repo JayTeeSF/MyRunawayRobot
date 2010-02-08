@@ -184,6 +184,7 @@ class Robot
 	  #binary_str = get_binaries(@min,@max,@matrix.size,@matrix[0].size, @matrix,rstr, debug_level, palindrome_start).first
       #@path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
 	  while thread_ary.size > 0
+	    break if @path.size > 0
 	    sleep 1
 	    thread_ary.each_with_index do |thr,i|
 	      if ! thr.status
