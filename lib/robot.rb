@@ -85,7 +85,7 @@ class Robot
   # :terrain_string=>"..X...X.."
   #
   def cell_generator
-    terrain_ary = @map_terrain.split(//)
+    terrain_ary = @map_terrain.gsub(/[^X\.]+/,"").split(//)
     i = -1
     lambda { i += 1; terrain_ary[i] }
   end
@@ -220,10 +220,11 @@ foo = <<-'YOOO'
 static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug) {
   char* str = RSTRING_PTR(rstr);
   char* p;
+  char* p2;
   int c, x, y, j, i;
   int cell_val, curr_len, count,  num_zeros;
   //int how_big;
-  int path_len, mutable_base_ten, base_ten, max_base_ten;
+  int path_len, mutable_base_ten, base_ten, max_base_ten, palindrome, tmp_int;
   VALUE arr = rb_ary_new();
   // ID method = rb_intern("draw_matrix");
   if (! rb_respond_to(self, rb_intern("draw_matrix")))
@@ -269,9 +270,31 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
       // reset p to beginning of str:
       p = str;
 
+
       //reverse:
       for (x=0, j=strlen(str)-1; x<j; x++, j--)
         c = str[x], str[x] = str[j], str[j] = c;
+
+      // check if it's even
+      palindrome = 1;
+      if ('0' == *p) {
+        printf("dealing with an even number; checking for palindrome...\n");
+        // break, if the number is a palindrome:
+        tmp_int = curr_len / 2;
+        p2 = str;
+        p2 += tmp_int;
+        for (i=0; i<tmp_int; i++) {
+          if (*p != *p2) {
+          	palindrome = 0;
+          	break;
+          }
+          p++,p2++;
+        }
+      }
+      if (1 == palindrome) {
+      	printf("skipping a palindrome(%s)...\n",str);
+      	break;
+      }
 
         //printf("base_ten(%d) resulted in str (%s) of len: %d\n",base_ten,str,curr_len);
 
@@ -315,16 +338,17 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
           }
           if (0 == cell_val) {
             // crash
-            if (debug >= 1) {
-              printf("crash...\n");
-            }
+            //if (debug >= 1) {
+              printf("CRASH... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
+            //}
             break;
           } else if (2 == cell_val) {
             // success
             rb_ary_push(arr, rb_str_new2(str));
-            if (debug >= 1) {
-              printf("success\n");
-            }
+            //if (debug >= 1) {
+              //printf("success\n");
+              printf("MADE-IT... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
+            //}
             ////printf("success; freeing str...\n");
             //free(str);
             return arr;
