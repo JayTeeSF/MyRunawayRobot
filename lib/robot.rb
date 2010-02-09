@@ -328,6 +328,12 @@ VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
 
   //printf("binary-lengths ranging from %d - %d\n",min,max);
   for (path_len=min; path_len<=max; path_len++) {
+    if (path_len < first_bomb_down) {
+      bomb_down = 0;
+    }
+    if (path_len < first_bomb_right) {
+      bomb_right = 0;
+    }
     max_base_ten = ((1 << path_len) - 1);
     //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
@@ -382,13 +388,13 @@ VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
       //printf("%d (base_ten) => %s (%d digit binary)\n",base_ten,str,curr_len);
 
 	  // we want to skip any 'str' values that attempt to go through bombs...
-      if ((1 == bomb_down) && (first_bomb_down <= curr_len) && (strnstr(str,down_bomb_str,first_bomb_down) != NULL)) {
+      if ((1 == bomb_down) && (strnstr(str,down_bomb_str,first_bomb_down) != NULL)) {
       	//printf("skipping explosing(%s)...\n",str);
         free(str);
       	continue;
       }
       // if it's too far to the right, then we'll be doing too many checks...
-      if ((1 == bomb_right) && (first_bomb_right <= curr_len) && (strnstr(str,right_bomb_str,first_bomb_right) != NULL)) {
+      if ((1 == bomb_right) && (strnstr(str,right_bomb_str,first_bomb_right) != NULL)) {
        //printf("skipping explosing(%s)...\n",str);
         free(str);
        continue;
