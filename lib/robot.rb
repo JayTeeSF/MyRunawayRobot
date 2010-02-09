@@ -282,75 +282,69 @@ class Robot
 		builder.include '<string.h>'
 		builder.include '<sys/types.h>'
 foo = <<-'YOOO'
+
 static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
   //VALUE rstr = rb_str_new2("");
   char* str;
   char* p;
   int c, x, y, j, i;
-  int cell_val, curr_len, count,  num_zeros;
-  int bomb_down, bomb_right, valid_bomb_down, valid_bomb_right;
-  char down_bomb_str[1000], right_bomb_str[1000];
-  //int right_cell, left_cell;
+  int cell_val, curr_len, count,  num_zeroes;
+  unsigned int valid_bomb_down, valid_bomb_right, close_bomb_down, close_bomb_right, even;
   int how_big = ( sizeof(int)*sizeof(char) );
   int path_len, mutable_base_ten, base_ten, max_base_ten;
   VALUE arr = rb_ary_new();
   //int palindrome, tmp_int;
   // ID method = rb_intern("draw_matrix");
-  if (! rb_respond_to(self, rb_intern("draw_matrix")))
-    rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
-
-  // // this value should probably be passed-in
-  //palindrome_start = min * 2;
+  if (debug == 1) {
+    if (! rb_respond_to(self, rb_intern("draw_matrix")))
+      rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
+  }
 
   // before any loops...
-  bomb_down = 0;
-  bomb_right = 0;
   valid_bomb_right = 0;
+  close_bomb_right = 0;
   if (first_bomb_right < max_width) {
-  	valid_bomb_right = 1;
-    if (first_bomb_right <=3) {
-  	  bomb_right = 1;
-      for (i=0; i<=first_bomb_right;i++) {
-  	    right_bomb_str[i] = '1'; // 1 means 'right'
-      }
-      right_bomb_str[first_bomb_right] = '\0';
-      //right_bomb_str[first_bomb_right + 1] = '\0';
-      printf("first_bomb_right is %d paces right, using: right_bomb_str(%s)\n",first_bomb_right, right_bomb_str);
+    if (first_bomb_right < 3) {
+      close_bomb_right = 1;
     }
+    valid_bomb_right = 1;
   }
 
   valid_bomb_down = 0;
+  close_bomb_down = 0;
   if (first_bomb_down < max_height) {
-  	valid_bomb_down = 1;
-    if (first_bomb_down <=5) {
-  	  bomb_down = 1;
-      for (i=0; i<=first_bomb_down;i++) {
-  	    down_bomb_str[i] = '0'; // 0 means 'down'
-      }
-      down_bomb_str[first_bomb_down] = '\0';
-      //down_bomb_str[first_bomb_down + 1] = '\0';
-      printf("first_bomb_down is %d paces down, using: down_bomb_str(%s)\n",first_bomb_down, down_bomb_str);
-    }
+   // if (first_bomb_down < 3) {
+    //  close_bomb_down = 1;
+    //}
+    valid_bomb_down = 1;
+    close_bomb_down = 1;
   }
+
+// the following two macros only work for A's between 2 & 9
+//#define num_digits(A) (A < 3) ? 2 : ((A < 8) ? 3 : 4)
+//#define last_digit_count(A) ((7 == A) || (8 == A)) ? 3 : (((3 == A)||(4 == A)) ? 2 : 1)
 
   //printf("binary-lengths ranging from %d - %d\n",min,max);
   for (path_len=min; path_len<=max; path_len++) {
-    if (path_len < first_bomb_down) {
-      bomb_down = 0;
-    }
-    if (path_len < first_bomb_right) {
-      bomb_right = 0;
-    }
     max_base_ten = ((1 << path_len) - 1);
     //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
       // skip 000... or 111... if we have a valid down/right bomb
 	  // (respectively)
-      if ( ((1 == valid_bomb_down) && (0 == base_ten))
-	     || ((1 == valid_bomb_right) && (base_ten == max_base_ten))) {
+      if ( (1 == valid_bomb_down && (0 == base_ten || (8 == base_ten && (first_bomb_down < path_len)) ) )
+	     || (1 == valid_bomb_right && (base_ten == 3 || base_ten == 7 || base_ten == max_base_ten))) {
        //printf("skipping explosing before generating string...\n");
         continue;
       }
+      //if ((1 == valid_bomb_down) && ((4 == base_ten) || (8 == base_ten)) && (first_bomb_down < path_len)  ) {
+        //even = ( (0 == (base_ten % 2)) ? 1 : 0 );
+        // odd base_tens end w/ 1
+        //if ( (1 == close_bomb_right) && (0 == even) && ((last_digit_count(base_ten)) >= first_bomb_right)) { 
+          //continue;
+        //} else if ((1 == valid_bomb_down) && (1 == even) 
+          //&& (((last_digit_count(base_ten)) + (path_len - (num_digits(base_ten)))) >= first_bomb_down)) {
+        //}
+      //}
       mutable_base_ten = base_ten;
       //str = malloc( sizeof(long)*8*sizeof(char) );
       //how_many = ( sizeof(int)*path_len*sizeof(char) );
@@ -364,29 +358,21 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
 
       curr_len = 0;
       // convert int to binary:
-      if (0 == base_ten) {
+      while (mutable_base_ten>0) {
         curr_len++;
-        (*p++='0');
-      } else {
-        while (mutable_base_ten>0) {
-          curr_len++;
-          // //printf("mutating bten: %d\n",mutable_base_ten);
-          /* bitwise AND operation with the last bit */
-          (mutable_base_ten & 0x1) ? (*p++='1') : (*p++='0');
-          /* big shift right */
-          mutable_base_ten >>= 1;
-        }
+        // //printf("mutating bten: %d\n",mutable_base_ten);
+        /* bitwise AND operation with the last bit */
+        (mutable_base_ten & 0x1) ? (*p++='1') : (*p++='0');
+        /* big shift right */
+        mutable_base_ten >>= 1;
       }
       // //printf("done mutating bten: %d\n",mutable_base_ten);
 
-      //append zero's if necessary
-      num_zeros = 0;
       //printf("path_len(%d) vs. curr_len(%d)\n",path_len,curr_len);
-      if (path_len > curr_len) {
-        num_zeros = path_len - curr_len;
-        //printf("appending %d 0's to str(%s)\n",num_zeros,str);
-      }
-      for (i = 0; i < num_zeros; i++) {
+      //append zero's if necessary
+      num_zeroes = (path_len > curr_len) ?  (path_len - curr_len) : 0;
+      //printf("appending %d 0's to str(%s)\n",num_zeroes,str);
+      for (i = 0; i < num_zeroes; i++) {
         curr_len++;
         (*p++='0');
       }
@@ -452,7 +438,7 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
         x = 0, y = 0;
 
         //move-robot, till we crash or succeed
-        if (debug >= 1) {
+        if (debug == 1) {
           printf("\n-- bgn initial map --\n");
           rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
           printf("-- end initial map --\n\n");
@@ -480,19 +466,19 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
           //printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
           //cell_val = RARRAY(RARRAY(matrix)->ptr[y])->ptr[x]
 
-          if (debug >= 1) {
+          if (debug == 1) {
             rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
           }
           if (0 == cell_val) {
             // crash
-            if (debug >= 1) {
+            if (debug == 1) {
               printf("CRASH... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
             }
             break;
           } else if (2 == cell_val) {
             // success
             rb_ary_push(arr, rb_str_new2(str));
-            if (debug >= 1) {
+            if (debug == 1) {
               printf("MADE-IT... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
             //rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
             }
