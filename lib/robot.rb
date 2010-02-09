@@ -282,14 +282,13 @@ class Robot
 		builder.include '<string.h>'
 		builder.include '<sys/types.h>'
 foo = <<-'YOOO'
-static VALUE get_binaries(int min, int max, int max_height, int max_width,
-VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
+static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
   //VALUE rstr = rb_str_new2("");
   char* str;
   char* p;
   int c, x, y, j, i;
   int cell_val, curr_len, count,  num_zeros;
-  int bomb_down, bomb_right;
+  int bomb_down, bomb_right, valid_bomb_down, valid_bomb_right;
   char down_bomb_str[1000], right_bomb_str[1000];
   //int right_cell, left_cell;
   int how_big = ( sizeof(int)*sizeof(char) );
@@ -306,24 +305,32 @@ VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
   // before any loops...
   bomb_down = 0;
   bomb_right = 0;
-  if (first_bomb_right <=3) {
-  	bomb_right = 1;
-    for (i=0; i<=first_bomb_right;i++) {
-  	  right_bomb_str[i] = '1'; // 1 means 'right'
+  valid_bomb_right = 0;
+  if (first_bomb_right < max_width) {
+  	valid_bomb_right = 1;
+    if (first_bomb_right <=3) {
+  	  bomb_right = 1;
+      for (i=0; i<=first_bomb_right;i++) {
+  	    right_bomb_str[i] = '1'; // 1 means 'right'
+      }
+      right_bomb_str[first_bomb_right] = '\0';
+      //right_bomb_str[first_bomb_right + 1] = '\0';
+      printf("first_bomb_right is %d paces right, using: right_bomb_str(%s)\n",first_bomb_right, right_bomb_str);
     }
-    right_bomb_str[first_bomb_right] = '\0';
-    //right_bomb_str[first_bomb_right + 1] = '\0';
-    printf("first_bomb_right is %d paces right, using: right_bomb_str(%s)\n",first_bomb_right, right_bomb_str);
   }
 
-  if (first_bomb_down <=5) {
-  	bomb_down = 1;
-    for (i=0; i<=first_bomb_down;i++) {
-  	  down_bomb_str[i] = '0'; // 0 means 'down'
+  valid_bomb_down = 0;
+  if (first_bomb_down < max_height) {
+  	valid_bomb_down = 1;
+    if (first_bomb_down <=5) {
+  	  bomb_down = 1;
+      for (i=0; i<=first_bomb_down;i++) {
+  	    down_bomb_str[i] = '0'; // 0 means 'down'
+      }
+      down_bomb_str[first_bomb_down] = '\0';
+      //down_bomb_str[first_bomb_down + 1] = '\0';
+      printf("first_bomb_down is %d paces down, using: down_bomb_str(%s)\n",first_bomb_down, down_bomb_str);
     }
-    down_bomb_str[first_bomb_down] = '\0';
-    //down_bomb_str[first_bomb_down + 1] = '\0';
-    printf("first_bomb_down is %d paces down, using: down_bomb_str(%s)\n",first_bomb_down, down_bomb_str);
   }
 
   //printf("binary-lengths ranging from %d - %d\n",min,max);
@@ -337,10 +344,11 @@ VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
     max_base_ten = ((1 << path_len) - 1);
     //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
-      if ( ((1 == bomb_down) && (0 == base_ten))
-	     || ((1 == bomb_right) && (base_ten == max_base_ten))) {
+      // skip 000... or 111... if we have a valid down/right bomb
+	  // (respectively)
+      if ( ((1 == valid_bomb_down) && (0 == base_ten))
+	     || ((1 == valid_bomb_right) && (base_ten == max_base_ten))) {
        //printf("skipping explosing before generating string...\n");
-        //free(str);
         continue;
       }
       mutable_base_ten = base_ten;
