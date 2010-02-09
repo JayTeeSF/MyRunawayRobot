@@ -337,6 +337,12 @@ VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
     max_base_ten = ((1 << path_len) - 1);
     //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
+      if ( ((1 == bomb_down) && (0 == base_ten))
+	     || ((1 == bomb_right) && (base_ten == max_base_ten))) {
+       //printf("skipping explosing before generating string...\n");
+        //free(str);
+        continue;
+      }
       mutable_base_ten = base_ten;
       //str = malloc( sizeof(long)*8*sizeof(char) );
       //how_many = ( sizeof(int)*path_len*sizeof(char) );
