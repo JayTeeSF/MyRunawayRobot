@@ -401,6 +401,7 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
 
       //printf("%d (base_ten) => %s (%d digit binary)\n",base_ten,str,curr_len);
 
+      /**
 	  // we want to skip any 'str' values that attempt to go through bombs...
       if ((1 == bomb_down) && (strnstr(str,down_bomb_str,first_bomb_down) != NULL)) {
       	//printf("skipping explosing(%s)...\n",str);
@@ -413,6 +414,7 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
         free(str);
        continue;
       }
+	  */
 /**
       //once we get to palindrome_start then start checking for palindromes
       palindrome = 0;
