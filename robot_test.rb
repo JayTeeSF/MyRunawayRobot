@@ -82,9 +82,10 @@ class RobotTest < Test::Unit::TestCase
   end
 
   # prove that we can solve the simplest of puzzles
-  def test_possible_puzzles
+  def test_possible
     puts "test_possible_puzzles"
-
+=begin
+=end
     puts "setup possible(right) robot"
     @robot = Robot.new @right_config
 
@@ -111,7 +112,6 @@ class RobotTest < Test::Unit::TestCase
 
     puts "setup possible(m-mix) robot"
     @robot = Robot.new @med_mix_config
-
     puts "test_possible_puzzles_3"
     assert_nothing_raised { @robot.solve }
   end
@@ -165,8 +165,8 @@ class RobotTest < Test::Unit::TestCase
   end
 
   # no where to run...
-  def test_fail_impossible_puzzle
-    puts "test_fail_impossible_puzzle"
+  def test_impossible
+    puts "test_impossible_puzzle"
 
     puts "setup impossible robot"
     @robot = Robot.new @impossible_config

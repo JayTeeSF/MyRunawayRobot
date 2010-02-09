@@ -3,7 +3,8 @@ require 'inline'
 require 'thread'  # For Mutex class in Ruby 1.8
 #require 'lib/map.rb'
 class Robot
-  attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix
+  attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix,
+  :right_till_bomb, :down_till_bomb
 
   #
   # this method gives the robots its marching orders
@@ -30,6 +31,8 @@ class Robot
 	@map_width = options[:board_x] - 1
 	@map_height = options[:board_x] - 1
     clear_path
+    @right_till_bomb = 0
+    @down_till_bomb = 0
 
     construct_matrix
     solve() if options[:only_config].nil?
@@ -72,7 +75,8 @@ class Robot
     (0..@map_height).each do |y_val|
       matrix_row = []
       (0 .. @map_width).each do |x_val|
-        matrix_row << ('.' == next_cell.call ? Robot.safe : Robot.bomb )
+        result = ('.' == next_cell.call ? Robot.safe : Robot.bomb )
+        matrix_row << result
       end
       matrix_row << Robot.success
       @matrix << matrix_row
@@ -92,6 +96,29 @@ class Robot
     terrain_ary = @map_terrain.gsub(/[^X\.]+/,"").split(//)
     i = -1
     lambda { i += 1; terrain_ary[i] }
+  end
+
+  # should make this work from a given coordinate...
+  def moves_till_bomb(direction)
+  	count = 0
+  	if direction == 'right'
+      # /^([\.]+)X/.match(@map_terrain)
+      tmp_path = @map_terrain[/^([\.]+)X/,1]
+      if tmp_path
+        count += tmp_path.size
+      else
+        count = @map_terrain.size + 1
+      end
+  	else
+      begin
+	    count += 1
+		if count >= @matrix.size
+	      count = @matrix.size + 1
+	      break
+		end
+      end until @matrix[count][0] == Robot.bomb
+  	end
+  	return count
   end
   
   def self.bomb
@@ -151,16 +178,6 @@ class Robot
     next_move = []
     # even_move:
     mid_val = mid()
-    if mid_val > @min
-      # TBD: append to thread_ary
-      #next_move << path_generator(true,@min,mid_val)
-      #if @max > mid_val
-      #  mid_val += 1
-      #end
-    end
-    # odd_move:
-    #next_move << path_generator(true,mid_val,@max)
-    #move_size = next_move.size
 
     # first check if we've already got a solution to this map...
     #count = 0
@@ -172,18 +189,18 @@ class Robot
 	  debug_level = 1 if @debug
       palindrome_start = @min * 2;
       thread_ary = []
+      #how-many 1's before we see a bomb
+      first_bomb_right = moves_till_bomb('right')
+      #how-many 0's before we see a bomb
+      first_bomb_down = moves_till_bomb('down')
     if use_threads
       if mid_val > @min
-	    #binary_str =
-		get_binaries(@min,mid_val,@matrix.size-1,@matrix[0].size-1, @matrix,debug_level).first
-        thread_ary[thread_ary.size] = Thread.new {
-		Thread.current["binary_str"] = get_binaries(@min,mid_val,@matrix.size-1,@matrix[0].size-1, @matrix,debug_level).first }
+        thread_ary[thread_ary.size] = Thread.new { Thread.current["binary_str"] = get_binaries(@min,mid_val,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level).first }
         if @max > mid_val
           mid_val += 1
         end
       end
-      thread_ary[thread_ary.size] = Thread.new {
-	  Thread.current["binary_str"] = get_binaries(mid_val,@max,@matrix.size-1,@matrix[0].size-1, @matrix,debug_level).first }
+      thread_ary[thread_ary.size] = Thread.new { Thread.current["binary_str"] = get_binaries(mid_val,@max,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level).first }
 	  while [] == @path && thread_ary.size > 0
 	    sleep 0.01
 	    thread_ary.each_with_index do |thr,i|
@@ -211,7 +228,7 @@ class Robot
 	  thread_ary.each {|thr| Thread.kill(thr) }
     else
 	  #former 2-lines:
-	  binary_str = get_binaries(@min,@max,@matrix.size-1,@matrix[0].size-1, @matrix, debug_level ).first
+	  binary_str = get_binaries(@min,@max,@matrix.size-1,@matrix[0].size-1, @matrix, first_bomb_right, first_bomb_down, debug_level ).first
       @path = ( binary_str.nil? ) ? [] : binary_to_path( binary_str.split(//) )
     end
 
@@ -265,17 +282,19 @@ class Robot
 		builder.include '<string.h>'
 		builder.include '<sys/types.h>'
 foo = <<-'YOOO'
-static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, int debug) {
+static VALUE get_binaries(int min, int max, int max_height, int max_width,
+VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
   //VALUE rstr = rb_str_new2("");
   char* str;
   char* p;
   int c, x, y, j, i;
   int cell_val, curr_len, count,  num_zeros;
-  int right_cell, left_cell;
+  int bomb_down, bomb_right;
+  char down_bomb_str[1000], right_bomb_str[1000];
+  //int right_cell, left_cell;
   int how_big = ( sizeof(int)*sizeof(char) );
   int path_len, mutable_base_ten, base_ten, max_base_ten;
   VALUE arr = rb_ary_new();
-  //char* p2;
   //int palindrome, tmp_int;
   // ID method = rb_intern("draw_matrix");
   if (! rb_respond_to(self, rb_intern("draw_matrix")))
@@ -285,11 +304,32 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
   //palindrome_start = min * 2;
 
   // before any loops...
-  right_cell = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[0])[1]);
-  left_cell = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[1])[0]);
+  bomb_down = 0;
+  bomb_right = 0;
+  if (first_bomb_right <=3) {
+  	bomb_right = 1;
+    for (i=0; i<=first_bomb_right;i++) {
+  	  right_bomb_str[i] = '1'; // 1 means 'right'
+    }
+    right_bomb_str[first_bomb_right] = '\0';
+    //right_bomb_str[first_bomb_right + 1] = '\0';
+    printf("first_bomb_right is %d paces right, using: right_bomb_str(%s)\n",first_bomb_right, right_bomb_str);
+  }
 
+  if (first_bomb_down <=5) {
+  	bomb_down = 1;
+    for (i=0; i<=first_bomb_down;i++) {
+  	  down_bomb_str[i] = '0'; // 0 means 'down'
+    }
+    down_bomb_str[first_bomb_down] = '\0';
+    //down_bomb_str[first_bomb_down + 1] = '\0';
+    printf("first_bomb_down is %d paces down, using: down_bomb_str(%s)\n",first_bomb_down, down_bomb_str);
+  }
+
+  //printf("binary-lengths ranging from %d - %d\n",min,max);
   for (path_len=min; path_len<=max; path_len++) {
     max_base_ten = ((1 << path_len) - 1);
+    //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
       mutable_base_ten = base_ten;
       //str = malloc( sizeof(long)*8*sizeof(char) );
@@ -338,14 +378,21 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
       //reverse:
       for (x=0, j=strlen(p)-1; x<j; x++, j--)
         c = p[x], p[x] = p[j], p[j] = c;
-      if (
-	  ( (0 == right_cell) && ('1' == *p) )
-      || ( ( 0 == left_cell ) && ('0' == *p) )
-      ) {
-      	break;
+
+      //printf("%d (base_ten) => %s (%d digit binary)\n",base_ten,str,curr_len);
+
+	  // we want to skip any 'str' values that attempt to go through bombs...
+      if ((1 == bomb_down) && (first_bomb_down <= curr_len) && (strnstr(str,down_bomb_str,first_bomb_down) != NULL)) {
+      	//printf("skipping explosing(%s)...\n",str);
+        free(str);
+      	continue;
       }
-/**
-*/
+      // if it's too far to the right, then we'll be doing too many checks...
+      if ((1 == bomb_right) && (first_bomb_right <= curr_len) && (strnstr(str,right_bomb_str,first_bomb_right) != NULL)) {
+       //printf("skipping explosing(%s)...\n",str);
+        free(str);
+       continue;
+      }
 /**
       //once we get to palindrome_start then start checking for palindromes
       palindrome = 0;
@@ -369,7 +416,8 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
       }
       if (1 == palindrome) {
       	printf("skipping a palindrome(%s)...\n",str);
-      	break;
+      	free(str);
+      	next;
       }
 */
         //printf("base_ten(%d) resulted in str (%s) of len: %d\n",base_ten,str,curr_len);
