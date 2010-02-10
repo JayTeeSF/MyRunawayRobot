@@ -330,9 +330,10 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
     //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
       // skip 000... or 111... if we have a valid down/right bomb
+//(8 == base_ten && (first_bomb_down < path_len))
+//(base_ten == 3 || base_ten == 7 || base_ten == max_base_ten)
 	  // (respectively)
-      if ( (1 == valid_bomb_down && (0 == base_ten || (8 == base_ten && (first_bomb_down < path_len)) ) )
-	     || (1 == valid_bomb_right && (base_ten == 3 || base_ten == 7 || base_ten == max_base_ten))) {
+      if ( (1 == valid_bomb_down && 0 == base_ten ) || (1 == valid_bomb_right && base_ten == max_base_ten)) {
        //printf("skipping explosing before generating string...\n");
         continue;
       }
