@@ -1,10 +1,13 @@
 require 'rubygems'
-require 'inline'
 require 'thread'  # For Mutex class in Ruby 1.8
-#require 'lib/map.rb'
+require 'drb'
+require 'lib/ssh'
+
 class Robot
+  PWD = ''
+
   attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix,
-  :right_till_bomb, :down_till_bomb
+  :right_till_bomb, :down_till_bomb, :instruct_options, :servers
 
   #
   # this method gives the robots its marching orders
@@ -21,12 +24,23 @@ class Robot
       :ins_min => 0,
       :ins_max => 0
     }.merge(params)
+    @instruct_options = options
+
+    @servers = [
+    {'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.122', 'ruby' => '/usr/local/bin/ruby', 'port' => '61676'},
+    {'nokill' => 1, 'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.7', 'ruby' => '/Users/jlthomas/.rvm/rubies/ruby-1.9.1-p378/bin/ruby', 'port' => '61676'}, {'nokill' => 1, 'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.7', 'ruby' => '/Users/jlthomas/.rvm/rubies/ruby-1.9.1-p378/bin/ruby', 'port' => '61677'},
+    {'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61676'},
+    {'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61679'}
+    ]
+    #{'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61677'},
+    #{'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61678'},
 
     @start_x = 0
     @start_y = 0
     @cache_off = options[:cache_off]
     @min = options[:ins_min]
     @max = options[:ins_max]
+    @diff = @max - @min
 	@map_terrain = options[:terrain_string]
 	@map_width = options[:board_x] - 1
 	@map_height = options[:board_x] - 1
@@ -162,7 +176,7 @@ class Robot
   # to D's & R's is easy
   #
   def solve
-  use_threads = false
+  use_threads = true
     # given an 'n' between min & max
     # total possible results: 2**n
     # a path can be constructed from binary values ranging from n-0's  .. n-1's
@@ -174,10 +188,9 @@ class Robot
     # easy ?!):
     # (0 .. (n.size)).each { |slot| puts "slot: #{slot}: #{n[slot]}" }
 
-    puts "solving..." if @debug
+    puts "\n\nsolving..." if @debug
     next_move = []
     # even_move:
-    mid_val = mid()
 
     # first check if we've already got a solution to this map...
     #count = 0
@@ -187,25 +200,149 @@ class Robot
     if [] == @path
 	  debug_level = 0
 	  debug_level = 1 if @debug
-      palindrome_start = @min * 2;
       thread_ary = []
       #how-many 1's before we see a bomb
       first_bomb_right = moves_till_bomb('right')
       #how-many 0's before we see a bomb
       first_bomb_down = moves_till_bomb('down')
     if use_threads
-      if mid_val > @min
-        thread_ary[thread_ary.size] = Thread.new { Thread.current["binary_str"] = get_binaries(@min,mid_val,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level).first }
-        if @max > mid_val
-          mid_val += 1
+servers_started = {}
+ssh = Ssh.new
+
+delete_list = []
+#puts "initial server count: #{@servers.size}"
+@servers.each_with_index do |server_info, idx|
+  # what to do on this server !?!
+  #puts "connecting... #{server_info.inspect}"
+  ip = server_info['ip']
+  u = server_info['u']
+  port = server_info['port']
+  ruby = server_info['ruby']
+  dir = server_info['dir']
+
+  pids_cmd = "/bin/ps -ewww -opid,command |/usr/bin/grep 'robot\_service\.'| /usr/bin/grep -v grep"
+
+  #puts "connecting to #{ip}..."
+  ssh.connect(ip,u,PWD)
+
+  if (servers_started[ip].nil?) && (server_info['nokill'].nil?)
+    pids = ssh.connection.exec!(pids_cmd)
+    if pids
+      pid_array = pids.map do |pid_plus|
+        pid = pid_plus[/^\s*(\d+)\s+/,1] || nil
+      end
+      pid_array.compact!
+    else
+      pid_array = []
+    end
+    if pid_array.size > 0
+      #puts "found the following procs to kill on #{ip}: #{pid_array.inspect}"
+  
+      pid_array.each do |pid|
+        #pid = pid_plus[/^\s*(\d+)\s+/,1]
+        #if pid
+          puts "remote kill: #{ip} - pid: #{pid}..."
+          ssh.connection.exec! "kill -9 #{pid}"
+        #else
+        #  puts "no pid to kill..."
+        #end
+      end
+      #sleep 1
+
+      #else
+      #  puts "no procs to kill on #{ip}: #{pid_array.inspect}"
+    end
+  else
+    puts "#{ip} already started..."
+  end
+
+  out = ""
+  cmd = "/bin/sh #{dir}/start_robot_service.sh #{ruby} #{dir} #{port}"
+  full_cmd = "/usr/bin/nohup #{cmd} >/tmp/out.log < /dev/null &"
+  out = ssh.connection.exec! full_cmd
+  #sleep 3
+
+  pids = ssh.connection.exec!(pids_cmd)
+  if pids
+    pid_array = pids.map do |pid_plus|
+      pid = pid_plus[/^\s*(\d+)\s+/,1] || nil
+    end
+    pid_array.compact!
+    puts "the following procs on #{ip} are running: #{pid_array.inspect}"
+    servers_started[ip] = 1
+  else
+    pid_array = []
+    #puts "no procs are running on #{ip}: #{pids.inspect}"
+    #puts "got: #{out}"
+    puts "tried starting robot_service on #{ip}, port: #{port}, using full_cmd: #{full_cmd}"
+    puts "preparing to delete server: #{@servers[idx].inspect}"
+    delete_list.push(idx)
+    servers_started[ip] = nil
+  end
+
+  #if test fails
+  server = DRbObject.new_with_uri("druby://#{ip}:#{port}")
+  expected = 'hi'
+  if expected != server.echo(expected).to_s
+    delete_list.push(idx)
+  end
+  
+  #puts "closing..."
+  ssh.close
+end
+delete_list.each do |idx|
+  #puts "DELETING server: #{@servers[idx].inspect}"
+  @servers[idx] = nil
+end
+@servers.compact!
+#puts "server count: #{@servers.size}"
+
+sleep 3
+#puts "\n\n solving matrix: #{@matrix.inspect}\n"
+#puts "params: #{@instruct_options.inspect}"
+    span_val = span() #no longer "middle value" but rather, the "span" from <min> -> <server1> -> ... -> <max>
+#puts "full range: #{@min} - #{@max}; span: #{span_val}"
+
+      #if span_val > 1 #@min
+        final = @min - 1
+        (@min..(@max - span_val)).step(span_val) do |i|
+          final = ((i + span_val) >= @max) ? @max : ((i + span_val) - 1)
+          puts "thread_ary[#{thread_ary.size}] => [#{i} - #{final}] calling druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}"
+          server = DRbObject.new_with_uri("druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}")
+          #puts "echo expected: #{span_val.to_s} got: " + server.echo(span_val).to_s
+          thread_ary[thread_ary.size] = Thread.new do
+            s = thread_ary.size
+            result_ary = server.get_binaries(i,(final - 1),@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level)
+            puts "thread_ary[#{s}], got result_ary: #{result_ary.inspect}"
+            Thread.current["binary_str"] = result_ary.first
+          end
+        end
+
+        #if (@diff + 1) > span_val
+        #  span_val += 1
+        #end
+      #end
+      if final < @max
+        puts "thread_ary[#{thread_ary.size}] => [#{(final + 1)} - #{@max}] calling druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}"
+        server = DRbObject.new_with_uri("druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}")
+        #puts "echo expected: #{span_val.to_s} got: " + server.echo(span_val).to_s
+        thread_ary[thread_ary.size] = Thread.new do
+          s = thread_ary.size
+          #Thread.current["binary_str"] = server.get_binaries((final + 1),@max,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level).first
+          result_ary = server.get_binaries((final + 1),@max,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level)
+          puts "thread_ary[#{s}], got result_ary: #{result_ary.inspect}"
+          Thread.current["binary_str"] = result_ary.first
         end
       end
-      thread_ary[thread_ary.size] = Thread.new { Thread.current["binary_str"] = get_binaries(mid_val,@max,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level).first }
+      puts "done calling..."
 	  while [] == @path && thread_ary.size > 0
-	    sleep 0.01
+	    #sleep 0.01
+	    sleep 1
+	    delete_list = []
 	    thread_ary.each_with_index do |thr,i|
 	      if ! thr.status
-	        thread_ary.delete(i)
+          delete_list.push(i)
+	        #thread_ary.delete(i)
 	        if thr && thr["binary_str"]
 
 	          #got what we wanted
@@ -221,7 +358,11 @@ class Robot
 	          break
 	        end
 	      end
+	    end #end thread_ary loop
+      delete_list.each do |idx|
+        thread_ary[idx] = nil
 	    end
+      thread_ary.compact!
 	  end
 
 	  #kill all other threads
@@ -244,7 +385,7 @@ class Robot
 
     # if we got this far then we were successful
 	if @debug
-    	puts "solved."
+    	puts "solved.\n\n"
 	end
 
     # save this path to our solutions 'cache' file, for future use
@@ -258,12 +399,18 @@ class Robot
     @path.join
   end
 
-  def mid(min=@min,max=@max)
-    diff = max - min
+  def span(min=@min,max=@max)
+    #diff = max - min
     #return 1 if 0 == diff
-    mid = min + (diff / 2)
-    puts "mid: #{mid}"
-    mid
+    segments = @servers.size > @diff ? @diff : @servers.size
+    segments = (0 == segments) ? 1 : segments
+    puts "breaking range of #{@diff} into #{segments} segments..."
+    span = @diff / segments
+    while ((span * segments) < @diff)
+      span += 1
+    end
+    puts "#{@min} - #{@max} => span: #{span}"
+    span = (0 == span) ? 1 : span
     #min + ((max - min) / 2)
   end
 
@@ -274,229 +421,5 @@ class Robot
     puts "transforming binary: #{binary_ary.join}..." if @debug
     binary_ary.map {|digit| (digit.to_s == "0")? Robot.down() : Robot.right() }
   end
-
-# static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, VALUE rstr, int debug, int palindrome_start) 
-
-	inline(:C) do |builder|
-		builder.include '<stdio.h>'
-		builder.include '<string.h>'
-		builder.include '<sys/types.h>'
-foo = <<-'YOOO'
-
-static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE matrix, int first_bomb_right, int first_bomb_down, int debug) {
-  //VALUE rstr = rb_str_new2("");
-  char* str;
-  char* p;
-  int c, x, y, j, i;
-  int cell_val, curr_len, count,  num_zeroes;
-  unsigned int valid_bomb_down, valid_bomb_right, close_bomb_down, close_bomb_right, even;
-  int how_big = ( sizeof(int)*sizeof(char) );
-  int path_len, mutable_base_ten, base_ten, max_base_ten;
-  VALUE arr = rb_ary_new();
-  //int palindrome, tmp_int;
-  // ID method = rb_intern("draw_matrix");
-  if (debug == 1) {
-    if (! rb_respond_to(self, rb_intern("draw_matrix")))
-      rb_raise(rb_eRuntimeError, "target must respond to 'draw_matrix'");
-  }
-
-  // before any loops...
-  valid_bomb_right = 0;
-  close_bomb_right = 0;
-  if (first_bomb_right < max_width) {
-    if (first_bomb_right < 3) {
-      close_bomb_right = 1;
-    }
-    valid_bomb_right = 1;
-  }
-
-  valid_bomb_down = 0;
-  close_bomb_down = 0;
-  if (first_bomb_down < max_height) {
-   // if (first_bomb_down < 3) {
-    //  close_bomb_down = 1;
-    //}
-    valid_bomb_down = 1;
-    close_bomb_down = 1;
-  }
-
-// the following two macros only work for A's between 2 & 9
-//#define num_digits(A) (A < 3) ? 2 : ((A < 8) ? 3 : 4)
-//#define last_digit_count(A) ((7 == A) || (8 == A)) ? 3 : (((3 == A)||(4 == A)) ? 2 : 1)
-
-  //printf("binary-lengths ranging from %d - %d\n",min,max);
-  for (path_len=min; path_len<=max; path_len++) {
-    max_base_ten = ((1 << path_len) - 1);
-    //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
-    for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
-      // skip 000... or 111... if we have a valid down/right bomb
-//(8 == base_ten && (first_bomb_down < path_len))
-//(base_ten == 3 || base_ten == 7 || base_ten == max_base_ten)
-	  // (respectively)
-      if ( (1 == valid_bomb_down && 0 == base_ten ) || (1 == valid_bomb_right && base_ten == max_base_ten)) {
-       //printf("skipping explosing before generating string...\n");
-        continue;
-      }
-      //if ((1 == valid_bomb_down) && ((4 == base_ten) || (8 == base_ten)) && (first_bomb_down < path_len)  ) {
-        //even = ( (0 == (base_ten % 2)) ? 1 : 0 );
-        // odd base_tens end w/ 1
-        //if ( (1 == close_bomb_right) && (0 == even) && ((last_digit_count(base_ten)) >= first_bomb_right)) { 
-          //continue;
-        //} else if ((1 == valid_bomb_down) && (1 == even) 
-          //&& (((last_digit_count(base_ten)) + (path_len - (num_digits(base_ten)))) >= first_bomb_down)) {
-        //}
-      //}
-      mutable_base_ten = base_ten;
-      //str = malloc( sizeof(long)*8*sizeof(char) );
-      //how_many = ( sizeof(int)*path_len*sizeof(char) );
-      //how_big = ( sizeof(int)*path_len*sizeof(char) );
-      // //printf("mallocing a str that is %d bytes\n",how_big);
-      str = calloc( path_len + 1, how_big );
-	  // need to reset this to blank...
-  //str = RSTRING_PTR(rstr);
-      // *str = '\0';
-      p = str;
-
-      curr_len = 0;
-      // convert int to binary:
-      while (mutable_base_ten>0) {
-        curr_len++;
-        // //printf("mutating bten: %d\n",mutable_base_ten);
-        /* bitwise AND operation with the last bit */
-        (mutable_base_ten & 0x1) ? (*p++='1') : (*p++='0');
-        /* big shift right */
-        mutable_base_ten >>= 1;
-      }
-      // //printf("done mutating bten: %d\n",mutable_base_ten);
-
-      //printf("path_len(%d) vs. curr_len(%d)\n",path_len,curr_len);
-      //append zero's if necessary
-      num_zeroes = (path_len > curr_len) ?  (path_len - curr_len) : 0;
-      //printf("appending %d 0's to str(%s)\n",num_zeroes,str);
-      for (i = 0; i < num_zeroes; i++) {
-        curr_len++;
-        (*p++='0');
-      }
-
-      // reset p to beginning of str:
-      p = str;
-
-
-      //reverse:
-      for (x=0, j=strlen(p)-1; x<j; x++, j--)
-        c = p[x], p[x] = p[j], p[j] = c;
-
-      //printf("%d (base_ten) => %s (%d digit binary)\n",base_ten,str,curr_len);
-
-      /**
-	  // we want to skip any 'str' values that attempt to go through bombs...
-      if ((1 == bomb_down) && (strnstr(str,down_bomb_str,first_bomb_down) != NULL)) {
-      	//printf("skipping explosing(%s)...\n",str);
-        free(str);
-      	continue;
-      }
-      // if it's too far to the right, then we'll be doing too many checks...
-      if ((1 == bomb_right) && (strnstr(str,right_bomb_str,first_bomb_right) != NULL)) {
-       //printf("skipping explosing(%s)...\n",str);
-        free(str);
-       continue;
-      }
-	  */
-/**
-      //once we get to palindrome_start then start checking for palindromes
-      palindrome = 0;
-      if (curr_len > palindrome_start) {
-        // check if it's even
-        tmp_int = curr_len / 2;
-        if ((tmp_int * 2) == curr_len) {
-          palindrome = 1;
-          printf("dealing with an even number of digits; check for palindrome...\n");
-          // break, if the number is a palindrome:
-          p2 = str;
-          p2 += tmp_int;
-          for (i=0; i<tmp_int; i++) {
-            if (*p != *p2) {
-          	  palindrome = 0;
-          	  break;
-            }
-            p++,p2++;
-          }
-        }
-      }
-      if (1 == palindrome) {
-      	printf("skipping a palindrome(%s)...\n",str);
-      	free(str);
-      	next;
-      }
-*/
-        //printf("base_ten(%d) resulted in str (%s) of len: %d\n",base_ten,str,curr_len);
-
-        //verify path, convert-it to a ruby-array and return
-        //OR
-        //loop to the next num...
-
-        //init robot-location:
-        x = 0, y = 0;
-
-        //move-robot, till we crash or succeed
-        if (debug == 1) {
-          printf("\n-- bgn initial map --\n");
-          rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
-          printf("-- end initial map --\n\n");
-        }
-        count = 0;
-        while ( (y < max_height) && (x < max_width) ) {
-          if (0 == (count % curr_len) ) {
-            // starting a cycle-through this binary #
-            // reset p to beginning of str:
-            p = str;
-          }
-          count++;
-          if ('0' == *p) {
-            //printf("p is 0\n");
-            y++;
-          } else if ('1' == *p) {
-            //printf("p is 1\n");
-            x++;
-          } else {
-            printf("got a bogus p value\n");
-          }
-          p++;
-
-          cell_val = NUM2INT(RARRAY_PTR(RARRAY_PTR(matrix)[y])[x]);
-          //printf("cell_val at y(%d),x(%d): %d\n",y,x,cell_val);
-          //cell_val = RARRAY(RARRAY(matrix)->ptr[y])->ptr[x]
-
-          if (debug == 1) {
-            rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
-          }
-          if (0 == cell_val) {
-            // crash
-            if (debug == 1) {
-              printf("CRASH... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
-            }
-            break;
-          } else if (2 == cell_val) {
-            // success
-            rb_ary_push(arr, rb_str_new2(str));
-            if (debug == 1) {
-              printf("MADE-IT... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
-            //rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
-            }
-            free(str);
-            return arr;
-          }
-        }
-		free(str);
-      }
-    }
-
-    //free(str);
-	// if we got here, then we return an empty array
-	return arr;
-}
-YOOO
-		builder.c foo
-	end
 
 end
