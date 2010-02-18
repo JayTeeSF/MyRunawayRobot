@@ -62,13 +62,13 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
   }
 
   valid_bomb_down = 0;
-  close_bomb_down = 0;
+  close_bomb_down = 1;
   if (first_bomb_down < max_height) {
-   // if (first_bomb_down < 3) {
-    //  close_bomb_down = 1;
-    //}
+    if (first_bomb_down <= 3) {
+      close_bomb_down = 0;
+    }
     valid_bomb_down = 1;
-    close_bomb_down = 1;
+    //close_bomb_down = 1;
   }
 
 // the following two macros only work for A's between 2 & 9
@@ -79,7 +79,7 @@ static VALUE get_binaries(int min, int max, int max_height, int max_width, VALUE
 printf("ready to loop...\n");
   for (path_len=min; path_len<=max; path_len++) {
     max_base_ten = ((1 << path_len) - 1);
-    //printf("binary-nums ranging from 0 - %d\n",max_base_ten);
+    printf("length %d: binary-nums ranging from 0 - %d\n",path_len, max_base_ten);
     for (base_ten=0; base_ten<= max_base_ten; base_ten++) {
       // skip 000... or 111... if we have a valid down/right bomb
 //(8 == base_ten && (first_bomb_down < path_len))
@@ -123,7 +123,13 @@ printf("ready to loop...\n");
 
       //printf("path_len(%d) vs. curr_len(%d)\n",path_len,curr_len);
       //append zero's if necessary
-      num_zeroes = (path_len > curr_len) ?  (path_len - curr_len) : 0;
+      num_zeroes = 0;
+      if (path_len > curr_len) {
+        num_zeroes = (path_len - curr_len);
+        if ( (num_zeroes > 3) && (0 == close_bomb_down) ) {
+          continue;
+        }
+      }
       //printf("appending %d 0's to str(%s)\n",num_zeroes,str);
       for (i = 0; i < num_zeroes; i++) {
         curr_len++;
@@ -140,47 +146,6 @@ printf("ready to loop...\n");
 
       //printf("%d (base_ten) => %s (%d digit binary)\n",base_ten,str,curr_len);
 
-      /**
-	  // we want to skip any 'str' values that attempt to go through bombs...
-      if ((1 == bomb_down) && (strnstr(str,down_bomb_str,first_bomb_down) != NULL)) {
-      	//printf("skipping explosing(%s)...\n",str);
-        free(str);
-      	continue;
-      }
-      // if it's too far to the right, then we'll be doing too many checks...
-      if ((1 == bomb_right) && (strnstr(str,right_bomb_str,first_bomb_right) != NULL)) {
-       //printf("skipping explosing(%s)...\n",str);
-        free(str);
-       continue;
-      }
-	  */
-/**
-      //once we get to palindrome_start then start checking for palindromes
-      palindrome = 0;
-      if (curr_len > palindrome_start) {
-        // check if it's even
-        tmp_int = curr_len / 2;
-        if ((tmp_int * 2) == curr_len) {
-          palindrome = 1;
-          printf("dealing with an even number of digits; check for palindrome...\n");
-          // break, if the number is a palindrome:
-          p2 = str;
-          p2 += tmp_int;
-          for (i=0; i<tmp_int; i++) {
-            if (*p != *p2) {
-          	  palindrome = 0;
-          	  break;
-            }
-            p++,p2++;
-          }
-        }
-      }
-      if (1 == palindrome) {
-      	printf("skipping a palindrome(%s)...\n",str);
-      	free(str);
-      	next;
-      }
-*/
         //printf("base_ten(%d) resulted in str (%s) of len: %d\n",base_ten,str,curr_len);
 
         //verify path, convert-it to a ruby-array and return
@@ -234,10 +199,10 @@ printf("ready to loop...\n");
           } else if (2 == cell_val) {
             // success
             rb_ary_push(arr, rb_str_new2(str));
-            if (debug == 1) {
+            //if (debug == 1) {
               printf("MADE-IT... base_ten(%d) resulted in str (%s) of len: %d (suppose to be: %d)\n",base_ten,str,curr_len,path_len);
             //rb_funcall(self, rb_intern("draw_matrix"), 2, INT2FIX(y), INT2FIX(x));
-            }
+            //}
             free(str);
             return arr;
           }
@@ -248,6 +213,7 @@ printf("ready to loop...\n");
 
     //free(str);
 	// if we got here, then we return an empty array
+	printf("returning\n");
 	return arr;
 }
 YOOO

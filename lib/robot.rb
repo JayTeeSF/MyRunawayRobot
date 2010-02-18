@@ -4,7 +4,6 @@ require 'drb'
 require 'lib/ssh'
 
 class Robot
-  PWD = ''
 
   attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug, :matrix,
   :right_till_bomb, :down_till_bomb, :instruct_options, :servers
@@ -27,13 +26,11 @@ class Robot
     @instruct_options = options
 
     @servers = [
-    {'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.122', 'ruby' => '/usr/local/bin/ruby', 'port' => '61676'},
+    {'nokill' => 1, 'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.122', 'ruby' => '/usr/local/bin/ruby', 'port' => '61676'},
     {'nokill' => 1, 'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.7', 'ruby' => '/Users/jlthomas/.rvm/rubies/ruby-1.9.1-p378/bin/ruby', 'port' => '61676'}, {'nokill' => 1, 'dir' => '/Users/jlthomas/Desktop', 'u' => 'jlthomas', 'ip' => '192.168.1.7', 'ruby' => '/Users/jlthomas/.rvm/rubies/ruby-1.9.1-p378/bin/ruby', 'port' => '61677'},
-    {'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61676'},
-    {'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61679'}
+    {'nokill' => 1, 'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61676'},
+    {'nokill' => 1, 'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61679'}
     ]
-    #{'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61677'},
-    #{'dir' => '/Users/jthomas/Projects/MyRunawayRobot/src/lib', 'u' => 'jthomas', 'ip' => '192.168.1.127', 'ruby' => '/Users/jthomas/.rvm/rubies/ree-1.8.7-2010.01/bin/ruby', 'port' => '61678'},
 
     @start_x = 0
     @start_y = 0
@@ -52,7 +49,16 @@ class Robot
     solve() if options[:only_config].nil?
   end
 
+  def self.prompt(msg="what?",options={})
+    print msg + " "
+    system "stty -echo" if options[:pwd]
+    result = gets.chomp
+    system "stty echo" if options[:pwd]
+    puts ""
+    return result
+  end
   def initialize(params={})
+    @pwd = params[:pwd] || Robot.prompt("what's the pwd?",:pwd => true)
     @debug = params[:debug]
     @lock = Mutex.new  # For thread safety
     params.delete(:debug)
@@ -222,19 +228,22 @@ delete_list = []
 
   pids_cmd = "/bin/ps -ewww -opid,command |/usr/bin/grep 'robot\_service\.'| /usr/bin/grep -v grep"
 
-  if server_info['nokill']
+  if 1 == server_info['nokill']
     server = DRbObject.new_with_uri("druby://#{ip}:#{port}")
     expected = 'hi'
 
     begin
-      continue if expected == server.echo(expected).to_s
+      got = server.echo(expected).to_s
+      next if expected == got
     rescue Exception => e
-      puts "server.echo failed"
+      puts "server.echo failed (#{ip}): #{e.message}"
     end
+  else
+    puts "kill set for #{ip}"
   end
 
   #puts "connecting to #{ip}..."
-  ssh.connect(ip,u,PWD)
+  ssh.connect(ip,u,@pwd)
 
   if (servers_started[ip].nil?)
     pids = ssh.connection.exec!(pids_cmd)
@@ -252,7 +261,7 @@ delete_list = []
       pid_array.each do |pid|
         #pid = pid_plus[/^\s*(\d+)\s+/,1]
         #if pid
-          puts "remote kill: #{ip} - pid: #{pid}..."
+          puts "\tremote kill: #{ip} - pid: #{pid}..."
           ssh.connection.exec! "kill -9 #{pid}"
         #else
         #  puts "no pid to kill..."
@@ -263,15 +272,16 @@ delete_list = []
       #else
       #  puts "no procs to kill on #{ip}: #{pid_array.inspect}"
     end
+    sleep 1
   else
-    puts "#{ip} already started..."
+    puts "\t#{ip} already started..."
   end
 
   out = ""
   cmd = "/bin/sh #{dir}/start_robot_service.sh #{ruby} #{dir} #{port}"
   full_cmd = "/usr/bin/nohup #{cmd} >/tmp/out.log < /dev/null &"
   out = ssh.connection.exec! full_cmd
-  #sleep 3
+  sleep 3
 
   pids = ssh.connection.exec!(pids_cmd)
   if pids
@@ -279,14 +289,14 @@ delete_list = []
       pid = pid_plus[/^\s*(\d+)\s+/,1] || nil
     end
     pid_array.compact!
-    puts "the following procs on #{ip} are running: #{pid_array.inspect}"
+    puts "\tthe following procs on #{ip} are running: #{pid_array.inspect}"
     servers_started[ip] = 1
   else
     pid_array = []
     #puts "no procs are running on #{ip}: #{pids.inspect}"
     #puts "got: #{out}"
-    puts "tried starting robot_service on #{ip}, port: #{port}, using full_cmd: #{full_cmd}"
-    puts "preparing to delete server: #{@servers[idx].inspect}"
+    puts "\ttried starting robot_service on #{ip}, port: #{port}, using full_cmd: #{full_cmd}"
+    puts "\tpreparing to delete server: #{@servers[idx].inspect}"
     delete_list.push(idx)
     servers_started[ip] = nil
   end
@@ -295,59 +305,52 @@ delete_list = []
   server = DRbObject.new_with_uri("druby://#{ip}:#{port}")
   expected = 'hi'
   begin
-    delete_list.push(idx) if expected != server.echo(expected).to_s
+    got = server.echo(expected).to_s
+    delete_list.push(idx) if expected != got
   rescue Exception => e
-    puts "server.echo failed"
+    puts "\tserver.echo failed (#{ip}): #{e.message}"
   end
   
   #puts "closing..."
   ssh.close
 end
 delete_list.each do |idx|
-  #puts "DELETING server: #{@servers[idx].inspect}"
+  #puts "\tDELETING server: #{@servers[idx].inspect}"
   @servers[idx] = nil
 end
 @servers.compact!
 #puts "server count: #{@servers.size}"
 
-sleep 3
+#sleep 3
 #puts "\n\n solving matrix: #{@matrix.inspect}\n"
 #puts "params: #{@instruct_options.inspect}"
     span_val = span() #no longer "middle value" but rather, the "span" from <min> -> <server1> -> ... -> <max>
 #puts "full range: #{@min} - #{@max}; span: #{span_val}"
-
-      #if span_val > 1 #@min
-        final = @min - 1
-        (@min..(@max - span_val)).step(span_val) do |i|
-          final = ((i + span_val) >= @max) ? @max : ((i + span_val) - 1)
-          puts "thread_ary[#{thread_ary.size}] => [#{i} - #{final}] calling druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}"
-          server = DRbObject.new_with_uri("druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}")
-          #puts "echo expected: #{span_val.to_s} got: " + server.echo(span_val).to_s
-          thread_ary[thread_ary.size] = Thread.new do
-            s = thread_ary.size
-            result_ary = server.get_binaries(i,(final - 1),@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level)
-            puts "thread_ary[#{s}], got result_ary: #{result_ary.inspect}"
-            Thread.current["binary_str"] = result_ary.first
-          end
-        end
-
-        #if (@diff + 1) > span_val
-        #  span_val += 1
-        #end
-      #end
-      if final < @max
-        puts "thread_ary[#{thread_ary.size}] => [#{(final + 1)} - #{@max}] calling druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}"
+puts "\n\n\n"
+      final = @min - 1
+      (@min..(@max - span_val)).step(span_val) do |i|
+        final = ((i + span_val) >= @max) ? @max : ((i + span_val) - 1)
+        puts "thread_ary[#{thread_ary.size}] => [#{i} - #{final}] calling druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}"
         server = DRbObject.new_with_uri("druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}")
-        #puts "echo expected: #{span_val.to_s} got: " + server.echo(span_val).to_s
         thread_ary[thread_ary.size] = Thread.new do
           s = thread_ary.size
-          #Thread.current["binary_str"] = server.get_binaries((final + 1),@max,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level).first
+          result_ary = server.get_binaries(i,(final),@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level)
+          puts "thread_ary[#{s}], got result_ary: #{result_ary.inspect}"
+          Thread.current["binary_str"] = result_ary.first
+        end
+      end
+
+      if final < @max
+        puts "(f) thread_ary[#{thread_ary.size}] => [#{(final + 1)} - #{@max}] calling druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}"
+        server = DRbObject.new_with_uri("druby://#{@servers[thread_ary.size]['ip']}:#{@servers[thread_ary.size]['port']}")
+        thread_ary[thread_ary.size] = Thread.new do
+          s = thread_ary.size
           result_ary = server.get_binaries((final + 1),@max,@matrix.size-1,@matrix[0].size-1, @matrix,first_bomb_right,first_bomb_down,debug_level)
           puts "thread_ary[#{s}], got result_ary: #{result_ary.inspect}"
           Thread.current["binary_str"] = result_ary.first
         end
       end
-      puts "done calling..."
+      puts "done calling...\n"
 	  while [] == @path && thread_ary.size > 0
 	    #sleep 0.01
 	    sleep 1
@@ -398,7 +401,7 @@ sleep 3
 
     # if we got this far then we were successful
 	if @debug
-    	puts "solved.\n\n"
+    	puts "solved.\n\n\n"
 	end
 
     # save this path to our solutions 'cache' file, for future use
