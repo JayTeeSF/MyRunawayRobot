@@ -222,10 +222,21 @@ delete_list = []
 
   pids_cmd = "/bin/ps -ewww -opid,command |/usr/bin/grep 'robot\_service\.'| /usr/bin/grep -v grep"
 
+  if server_info['nokill']
+    server = DRbObject.new_with_uri("druby://#{ip}:#{port}")
+    expected = 'hi'
+
+    begin
+      continue if expected == server.echo(expected).to_s
+    rescue Exception => e
+      puts "server.echo failed"
+    end
+  end
+
   #puts "connecting to #{ip}..."
   ssh.connect(ip,u,PWD)
 
-  if (servers_started[ip].nil?) && (server_info['nokill'].nil?)
+  if (servers_started[ip].nil?)
     pids = ssh.connection.exec!(pids_cmd)
     if pids
       pid_array = pids.map do |pid_plus|
@@ -283,8 +294,10 @@ delete_list = []
   #if test fails
   server = DRbObject.new_with_uri("druby://#{ip}:#{port}")
   expected = 'hi'
-  if expected != server.echo(expected).to_s
-    delete_list.push(idx)
+  begin
+    delete_list.push(idx) if expected != server.echo(expected).to_s
+  rescue Exception => e
+    puts "server.echo failed"
   end
   
   #puts "closing..."
