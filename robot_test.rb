@@ -7,15 +7,26 @@ class RobotTest < Test::Unit::TestCase
   # I manually used rubular.com to test my regx's <-- because I do not
   # anticipate needing to change this code -- after today
 
+  def initialize(*args)
+   @pwd = ""
+   super(*args) 
+  end
+
   def setup
-    pwd = Robot.prompt("pwd?",:pwd => true)
+    @pwd ||= Robot.prompt("pwd?",:pwd => true)
     @impossible_config =  { :ins_min => 1, :ins_max => 1,
                             :terrain_string => ".XX.",
-                            :pwd => pwd,
+                            :pwd => @pwd,
                             :debug => true,
                             :board_x => 2, :board_y => 2,
                             :only_config => true, :cache_off => true
                           }
+    @huh_config = @impossible_config.merge({:terrain_string => "..XX.....", :ins_max => 2, :ins_min => 2,
+      :board_x => 3, :board_y => 3, :level => "0"})
+    # Found it (["D", "R"])!
+    #   0           [3,3]    (2..2)                                 DR  1.397443
+    
+    
     @down_config = @impossible_config.merge({:terrain_string => ".X.X"})
     @med_down_config = @impossible_config.merge({:board_x => 3, :board_y => 3, :terrain_string => ".X..X...."})
     @right_config = @impossible_config.merge({:terrain_string => "..XX"})
@@ -54,6 +65,31 @@ class RobotTest < Test::Unit::TestCase
   #  assert_equal([['D'],['R']], paths_retrieved)
   #end
 
+  def test_navigation
+    # @down_config = @impossible_config.merge({:terrain_string => ".X.X"})
+    puts "setup down_config"
+    @robot = Robot.new @down_config
+
+    # puts "map row0: #{@robot.map.matrix[0]}"
+    assert(@robot.map.matrix[0][0] == Map.safe)
+    # puts "map row0col1: #{@robot.map.matrix[0][1]}"
+    assert(@robot.map.matrix[0][1] == Map.bomb)
+    
+
+    # puts "map row1: #{@robot.map.matrix[1]}"
+    # puts "map row0col0: #{@robot.map.matrix[1][0]}"
+    assert(@robot.map.matrix[1][0] == Map.safe)
+    # puts "map row0col1: #{@robot.map.matrix[1][1]}"
+    assert(@robot.map.matrix[1][1] == Map.bomb)
+
+    # puts "should be able to move down, but not right"
+    row=col = 0
+    # puts "I shall go down from r:#{row}/c:#{col}"
+    assert(@robot.map.avail(Robot.down(), row,col) )
+    # puts "I shant go right from r:#{row}/c:#{col}"
+    assert(! @robot.map.avail(Robot.right(), row,col) )
+  end
+
   # eventually we need an expected time associated with this
   def test_performance
     puts "test_performance"
@@ -82,11 +118,19 @@ class RobotTest < Test::Unit::TestCase
     assert( expected_time_in_secs >= actual_time_in_secs )
   end
 
+def test_huh
+  puts "setup huh robot"
+  @robot = Robot.new @huh_config
+  puts "test_possible_puzzles_huh"
+  assert_nothing_raised { @robot.solve }
+end
+
   # prove that we can solve the simplest of puzzles
   def test_possible
     puts "test_possible_puzzles"
 =begin
 =end
+
     puts "setup possible(right) robot"
     @robot = Robot.new @right_config
 
@@ -153,7 +197,9 @@ class RobotTest < Test::Unit::TestCase
     @robot = Robot.new @broken_config4.merge(:debug => false)
 
     puts "test_regress_4"
-    assert_nothing_raised { @robot.solve }
+    # assert_nothing_raised { @robot.solve }
+    puts @robot.solve
+    
     rs = @robot.path.size
     assert(rs >= @broken_config4[:ins_min] && rs <= @broken_config4[:ins_max], "path is #{rs} and it's suppose to be in the range #{@broken_config4[:ins_min]}..#{@broken_config4[:ins_max]}")
 =begin
@@ -171,7 +217,7 @@ class RobotTest < Test::Unit::TestCase
 
     puts "setup impossible robot"
     @robot = Robot.new @impossible_config
-
+# puts @robot.solve
     assert_raise(RuntimeError) { @robot.solve }
   end
 

@@ -19,7 +19,7 @@ class Map
   #
   def lookup_solution(min,max)
     ret_val = @known_solutions[@terrain][@height][@width][min][max]
-    ret_val.class.to_s != 'Array' ? nil : ret_val
+    ret_val.kind_of?('Array') ? ret_val : nil 
   end
 
   #
@@ -71,19 +71,19 @@ class Map
   def construct_matrix
     next_cell = cell_generator
     clear_matrix
-    (0..@height).each do |y_val|
+    (0..@width).each do |x_val|
       matrix_row = []
-      (0 .. @width).each do |x_val|
+      (0 .. @height).each do |y_val|
         matrix_row << next_cell.call
       end
       #matrix_row << Map.success
       @matrix << matrix_row
     end
-	#matrix_row = []
-	#(0 .. (@width + 1)).each do |x_val|
-	#	matrix_row[x_val] = Map.success
-	#end
-	#@matrix << matrix_row
+    #matrix_row = []
+    #(0 .. (@width + 1)).each do |x_val|
+    #	matrix_row[x_val] = Map.success
+    #end
+    #@matrix << matrix_row
   end
 
   #
@@ -98,19 +98,38 @@ class Map
 
   def success(row,col)
     #@matrix[row][col] == Map.success
-    row > @width || col > @height
+    row > @height || col > @width
   end
 
   def done(row,col)
-    return 1 if ( row > @width || col > @height )
-	#success(row,col) 
-	return 0 if @matrix[row][col] == Map.bomb
-	#fail(row,col) 
-	return -1
+    return 1 if success(row,col)
+    #success(row,col) 
+    return 0 if fail(row,col)
+    #fail(row,col) 
+    return -1
   end
 
   def fail(row,col)
     @matrix[row][col] == Map.bomb
+  end
+
+  def undo(direction,row,col)
+    if direction == Robot.down
+      row -= 1
+    else
+      col -= 1
+    end
+    [row,col]
+  end
+
+  def avail(direction,row,col)
+    construct_matrix unless @matrix
+    if direction == Robot.down
+      row += 1
+    else
+      col += 1
+    end
+    ! fail(row,col)
   end
 
   #def known_bad?(path_ary=nil)
@@ -126,41 +145,55 @@ class Map
   #  return false
   #end
 
+  def left_off(path_ary=[])
+    row=col=0
+    path_ary.each do |move|
+      case move
+      when Robot.down
+        row += 1
+      else
+        col += 1
+      end
+    end
+    [row,col]
+  end
+
   #
   # return a string of robot directions
   #
-  def verify(row=0, col=0, path_ary=[])
+  def verify(path_ary=[], row=0, col=0)
     return false if [] == path_ary
     construct_matrix unless @matrix
     if @debug
-    	puts "verifying path: #{path_ary.inspect}..."
+      puts "verifying path: #{path_ary.inspect}..."
     end
 
     while true
       path_ary.each do |move|
         case move
-          when Robot.down
+        when Robot.down
             row += 1
-          else col += 1
+          else
+            col += 1
         end #end-case
 
         # TODO: refactor this so we don't _also_ exit from within the loop
         done_status = done(row,col)
         if done_status > -1
-			return false if done_status == 0
-			return true
+          return false if done_status == 0
+          return true
         end
         #break unless verified.nil?
-    	if @debug
-        	draw_matrix(row,col)
-    	end
+        if @debug
+          draw_matrix(row,col)
+        end
       end # end-each
       #cycle_count += 1
 
       done_status = done(row,col)
       if done_status > -1
-		return false if done_status == 0
-		return true
+        return false if done_status == 0
+        return true
       end
     end # end-while
   end
@@ -216,5 +249,5 @@ class Map
     end
     return true
   end
-  
+
 end

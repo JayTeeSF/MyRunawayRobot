@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 require 'lib/robot'
 require 'yaml'
 # http://www.hacker.org/runaway/index.php
@@ -15,7 +16,7 @@ DEFAULT_LEVEL = 0
 tries = 3
 print "Please enter a start-level [#{DEFAULT_LEVEL}]: "
 counter = (gets.chomp || DEFAULT_LEVEL).to_i
-puts ""
+puts "\n"
 
 def get_time
   Time.now
@@ -59,7 +60,7 @@ while true
     puts "bogus response was: #{res.to_s}"
     exit
   else
-    puts "ok"
+    puts "ok\n\n"
   end
     
 
@@ -97,14 +98,15 @@ while true
     :board_y        => param_name[/FVboardY=(\d*)&/,1].to_i,
     :level          => param_name[/FVlevel=(\d*)/,1].to_i
   }
-  puts "using: #{@params.map {|k,v| ":#{k} => \"#{v}\""}.join(', ')}...\n"
+  puts "\n\nusing: #{@params.map {|k,v| ":#{k} => \"#{v}\""}.join(', ')}...\n"
   robot.instruct(@params)
 
   path=robot.path
   report = "#{counter.to_s.rjust(3)}"+"[#{@params[:board_x]},#{@params[:board_y]}]".rjust(16) + 
-        "(#{@params[:ins_min]}..#{@params[:ins_max]})".center(15) + 
-        path.rjust(30) + "  " + (end_time - start_time).to_s
+        "(#{@params[:ins_min]}..#{@params[:ins_max]})".center(15) + " p>" +
+        path.rjust(30) + "<  " + (end_time - start_time).to_s
   puts report
+  exit unless(path && path.size > 0)
 #print "press <enter|return> to continue..."
 #tmp = gets
 #puts ""
