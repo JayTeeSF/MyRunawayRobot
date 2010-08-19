@@ -5,12 +5,13 @@ class RobotTest < Test::Unit::TestCase
 
   # NOTE: though automated testing of regx's is appropriate
   # I manually used rubular.com to test my regx's <-- because I do not
-  # anticipate needing to regress changes to this code -- beyond today
+  # anticipate needing to change this code -- after today
 
-  # NOTE: I would likely use factory_girl in a real coding situation:
   def setup
+    pwd = Robot.prompt("pwd?",:pwd => true)
     @impossible_config =  { :ins_min => 1, :ins_max => 1,
                             :terrain_string => ".XX.",
+                            :pwd => pwd,
                             :debug => true,
                             :board_x => 2, :board_y => 2,
                             :only_config => true, :cache_off => true

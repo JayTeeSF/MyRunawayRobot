@@ -126,9 +126,9 @@ printf("ready to loop...\n");
       num_zeroes = 0;
       if (path_len > curr_len) {
         num_zeroes = (path_len - curr_len);
-        if ( (num_zeroes > 3) && (0 == close_bomb_down) ) {
-          continue;
-        }
+        //if ( (num_zeroes > 3) && (0 == close_bomb_down) ) {
+          //continue;
+        //}
       }
       //printf("appending %d 0's to str(%s)\n",num_zeroes,str);
       for (i = 0; i < num_zeroes; i++) {

@@ -1,0 +1,31 @@
+# control & service:
+  def initialize(params={})
+  def instruct(params={})
+    def clear_path
+
+# service-only:
+get_binaries #c-code
+
+#control-only:
+  def construct_matrix
+    def clear_matrix
+    def cell_generator
+    def self.bomb
+    def self.safe
+    def self.success
+
+  def moves_till_bomb(direction)
+  def solve #a new one...
+    def mid(min=@min,max=@max)
+    def binary_to_path(binary_ary)
+      def self.down
+      def self.right
+  def path #string version of path array
+
+  # unused:
+  #  def draw_matrix(row=nil,col=nil)
+      #def self.boom
+      #def self.robot
+
+
+

@@ -105,5 +105,9 @@ while true
         "(#{@params[:ins_min]}..#{@params[:ins_max]})".center(15) + 
         path.rjust(30) + "  " + (end_time - start_time).to_s
   puts report
+#print "press <enter|return> to continue..."
+#tmp = gets
+#puts ""
+#puts "continuing..."
   counter += 1
 end
