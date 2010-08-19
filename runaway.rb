@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-require 'lib/robot'
+require './lib/robot.rb'
 require 'yaml'
 # http://www.hacker.org/runaway/index.php
 require 'net/http'

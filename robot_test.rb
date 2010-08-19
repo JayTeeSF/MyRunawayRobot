@@ -1,5 +1,6 @@
 require 'test/unit'
-require 'lib/robot'
+# require './lib/map.rb'
+require './lib/robot.rb'
 
 class RobotTest < Test::Unit::TestCase
 
@@ -85,12 +86,17 @@ class RobotTest < Test::Unit::TestCase
     # puts "should be able to move down, but not right"
     row=col = 0
     # puts "I shall go down from r:#{row}/c:#{col}"
-    assert(@robot.map.avail(Robot.down(), row,col) )
+    assert(@robot.map.avail?(Robot.down(), row,col) )
     # puts "I shant go right from r:#{row}/c:#{col}"
-    assert(! @robot.map.avail(Robot.right(), row,col) )
+    assert(! @robot.map.avail?(Robot.right(), row,col) )
   end
 
   # eventually we need an expected time associated with this
+  # REE: Finished in 16.276319 seconds.
+  # 1.9.2: Finished in 5.459060 seconds.
+  # jRuby 1.4: Finished in 5.345 seconds.
+  # jRuby 1.5.1: Finished in 4.799 seconds.
+  
   def test_performance
     puts "test_performance"
     expected_time_in_secs = 2.86554099999989

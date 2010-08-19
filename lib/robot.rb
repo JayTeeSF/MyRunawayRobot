@@ -1,4 +1,4 @@
-require 'lib/map.rb'
+require './lib/map.rb'
 class Robot
   attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug
 
@@ -59,37 +59,40 @@ class Robot
       @path = []
     end
 
-    def solve(current_path=[])
-
-      if current_path.size >= @min
-        if map.verify current_path
+    def solve(current_path=[], row=0, col=0)
+      path_size = current_path.size
+      if path_size >= @min && path_size <= @max
+        if map.verify current_path, row, col
 puts "Found it (#{current_path.inspect})!"
           @path = current_path
           return @path
         end
+      elsif path_size > @max
+        # need to force code to undo last move and try another option
+        return false
       end
 
-      # need to force code to undo last move and try another option
-      return false if current_path.size > @max
-
-      row, col = *map.left_off(current_path)
+      # row, col = *map.left_off(current_path)
 # puts "d: r#{row}/c#{col}"
-      if map.avail(Robot.down(), row,col)
+      move = map.move(Robot.down(),row,col)
+      if map.avail?(Robot.down(), *move)
         current_path << Robot.down()
-        solution = solve(current_path)
+        solution = solve(current_path,*move)
         if solution
           return solution
         else
           current_path.pop
+          # map.undo(Robot.down(), row, col)
         end
       end
 
-      row, col = *map.left_off(current_path)
+      # row, col = *map.left_off(current_path)
 # puts "r: r#{row}/c#{col}"
 
-      if map.avail(Robot.right(), row,col)
+      move = map.move(Robot.right(),row,col)
+      if map.avail?(Robot.right(), *move)
         current_path << Robot.right()
-        solution = solve(current_path)
+        solution = solve(current_path,*move)
         if solution
           return solution
         else

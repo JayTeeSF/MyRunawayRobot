@@ -102,9 +102,9 @@ class Map
   end
 
   def done(row,col)
-    return 1 if success(row,col)
+    return 1 if row > @height || col > @width
     #success(row,col) 
-    return 0 if fail(row,col)
+    return 0 if @matrix[row][col] == Map.bomb
     #fail(row,col) 
     return -1
   end
@@ -113,24 +113,34 @@ class Map
     @matrix[row][col] == Map.bomb
   end
 
-  def undo(direction,row,col)
-    if direction == Robot.down
-      row -= 1
-    else
-      col -= 1
-    end
+  # def undo(direction,row,col)
+  #   if direction == Robot.down
+  #     row -= 1
+  #   else
+  #     col -= 1
+  #   end
+  #   [row,col]
+  # end
+
+  def move(direction, row, col)
+    (direction == Robot.down) ? row += 1 : col += 1
     [row,col]
   end
 
-  def avail(direction,row,col)
-    construct_matrix unless @matrix
-    if direction == Robot.down
-      row += 1
-    else
-      col += 1
-    end
-    ! fail(row,col)
+  def avail?(direction,row,col)
+    # row, col = *handle_move(direction, row, col)
+
+    @matrix[row][col] == Map.safe
   end
+
+  # def handle_move(direction, row, col)
+  #   if direction == Robot.down
+  #     row += 1
+  #   else
+  #     col += 1
+  #   end
+  #   [row,col]
+  # end
 
   #def known_bad?(path_ary=nil)
   #  return true unless path_ary
@@ -145,57 +155,56 @@ class Map
   #  return false
   #end
 
-  def left_off(path_ary=[])
-    row=col=0
-    path_ary.each do |move|
-      case move
-      when Robot.down
-        row += 1
-      else
-        col += 1
-      end
-    end
-    [row,col]
-  end
+  # def left_off(path_ary=[])
+  #   row=col=0
+  #   path_ary.each do |direction|
+  #     if direction == Robot.down
+  #       row += 1
+  #     else
+  #       col += 1
+  #     end
+  #     # row, col = *handle_move(direction, row, col)      
+  #   end
+  #   [row,col]
+  # end
 
   #
   # return a string of robot directions
   #
   def verify(path_ary=[], row=0, col=0)
     return false if [] == path_ary
-    construct_matrix unless @matrix
-    if @debug
-      puts "verifying path: #{path_ary.inspect}..."
-    end
+    # construct_matrix unless @matrix
 
-    while true
-      path_ary.each do |move|
-        case move
-        when Robot.down
-            row += 1
-          else
-            col += 1
-        end #end-case
+    puts "verifying path: #{path_ary.inspect}..." if @debug
+
+    # done_status = done(row,col)
+    # if done_status > -1
+    #   return false if done_status == 0
+    #   return true
+    # end
+  
+    while 1 != done(row,col)
+      path_ary.each do |direction|
+        (direction == Robot.down) ? row += 1 : col += 1 
 
         # TODO: refactor this so we don't _also_ exit from within the loop
         done_status = done(row,col)
         if done_status > -1
           return false if done_status == 0
+          # puts "ok..."
           return true
         end
         #break unless verified.nil?
-        if @debug
-          draw_matrix(row,col)
-        end
+        draw_matrix(row,col) if @debug
+
       end # end-each
       #cycle_count += 1
 
-      done_status = done(row,col)
-      if done_status > -1
-        return false if done_status == 0
-        return true
-      end
+
     end # end-while
+    
+# puts "dropping through..."
+    return true
   end
 
   def self.success
