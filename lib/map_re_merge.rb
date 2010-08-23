@@ -199,7 +199,7 @@ class Map
   def debug_verify(path_ary=[], row=0, col=0)
     puts "verifying path (from: r#{row}/c#{col}): #{path_ary.inspect}..."
     # path_down, path_across = *[row, col]
-    while true # begin
+    begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         draw_matrix(row,col)
@@ -209,7 +209,7 @@ class Map
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
-    end # while true
+    end while true
 
     puts "dropping through..."
     return true
@@ -217,7 +217,7 @@ class Map
 
   def verify(path_ary=[], row=0, col=0)
     # path_down, path_across = *[row, col]
-    while true # begin
+    begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         return true if immediate_success(row,col)
@@ -226,7 +226,7 @@ class Map
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
-    end # while true
+    end while true
     
     
     return true

@@ -6,8 +6,8 @@ class Map
 
   def initialize(options={})
     @debug = options[:debug]
-    # @known_solutions = (options[:cache_off].nil?) ? load : Hash.new{|h, k| h[k]=Hash.new(&h.default_proc) }
-    # options.delete(:cache_off)
+    @known_solutions = (options[:cache_off].nil?) ? load : Hash.new{|h, k| h[k]=Hash.new(&h.default_proc) }
+    options.delete(:cache_off)
     options.delete(:debug)
     #puts "options: #{options.inspect}"
 
@@ -104,7 +104,7 @@ class Map
       (0 .. @height).each do |y_val|
         ascii_char = @matrix[y_val][x_val]
         if final_col_bomb
-          # puts "COL: xxx"
+          puts "COL: xxx"
           @matrix[y_val][x_val] = Map.bomb
         else
 
@@ -140,8 +140,22 @@ class Map
   #
   # return a terrain iterator
   # default: char-by-char
+  # optionally traverse a single column's values
   # :terrain_string=>"..X...X.."
   #
+  # def cell_generator(col = :all)
+  #   terrain_ary = @terrain.split(//)
+  # 
+  #   if col.kind_of?(Fixnum)
+  #     increment = @width
+  #     i = col
+  #   else      
+  #     increment = 1
+  #     i = 0
+  #   end
+  #   
+  #   lambda { terrain_ary[i]; i += increment }
+  # end
   def cell_generator
     terrain_ary = @terrain.split(//)
     increment = 1
@@ -157,14 +171,13 @@ class Map
     row > @height || col > @width
   end
 
-  # 
-  # def done(row,col)
-  #   return 1 if row > @height || col > @width # @matrix[row][col] == Map.success || 
-  #   #success(row,col) 
-  #   return 0 if @matrix[row][col] == Map.bomb
-  #   #fail(row,col) 
-  #   return -1
-  # end
+  def done(row,col)
+    return 1 if row > @height || col > @width # @matrix[row][col] == Map.success || 
+    #success(row,col) 
+    return 0 if @matrix[row][col] == Map.bomb
+    #fail(row,col) 
+    return -1
+  end
 
   def fail(row,col)
     @matrix[row][col] == Map.bomb
@@ -179,27 +192,34 @@ class Map
     immediate_success(row,col) || @matrix[row][col] == Map.safe
   end
 
-  # # append path to path, just checking the end-pts
-  # def repeat_verify(num_down, num_right, row, col)
-  #   row ||= num_down
-  #   col ||= num_right
-  # 
-  #   begin
-  #     return false if fail(row, col)
-  #     row += num_down
-  #     col += num_right
-  #   end while !success(row,col)
-  # 
-  #   return true
-  # end
+  # append path to path, just checking the end-pts
+  def quick_verify(row, col)
+    num_down = row
+    num_right = col
+
+    down_count = ((1 + @height).to_f.quo(num_down).ceil - 1)
+    right_count = ((1 + @width).to_f.quo(num_right).ceil - 1)
+
+    [down_count, right_count].min.times do
+      row += num_down
+      col += num_right
+      if fail(row, col)
+        # puts "early check ?!"
+        return false
+      end
+    end
+
+    return true
+  end
 
   #
   # return a string of robot directions
   #
   def debug_verify(path_ary=[], row=0, col=0)
     puts "verifying path (from: r#{row}/c#{col}): #{path_ary.inspect}..."
-    # path_down, path_across = *[row, col]
-    while true # begin
+    # return true if immediate_success(row,col)
+    # single_path_destination = [row, col]
+    while true
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         draw_matrix(row,col)
@@ -208,16 +228,17 @@ class Map
       end # end-each
       # not sure why, but this early-return is WORKING; and FAST
       # return true
-      # return repeat_verify(path_down, path_across, row, col)
-    end # while true
+      # return quick_verify(*single_path_destination)
+    end # end-while
 
     puts "dropping through..."
     return true
   end
 
   def verify(path_ary=[], row=0, col=0)
-    # path_down, path_across = *[row, col]
-    while true # begin
+    # return true if immediate_success(row,col)
+    # single_path_destination = [row, col]
+    while true
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         return true if immediate_success(row,col)
@@ -225,10 +246,8 @@ class Map
       end # end-each
       # not sure why, but this early-return is WORKING; and FAST
       # return true
-      # return repeat_verify(path_down, path_across, row, col)
-    end # while true
-    
-    
+      # return quick_verify(*single_path_destination)
+    end # end-while
     return true
   end
 

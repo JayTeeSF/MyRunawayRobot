@@ -1,0 +1,81 @@
+the fact that we can only move down/right has to be significant:
+ o  each cell can be represented by its (single) distance away from the start
+    - the distance from a-cell to another-cell is another-cell's distance - (minus) a-cell's distance
+
+each cell that is "accessible" should be a #. (and possibly *# for the borders)
+that way I can check if the last-char is a '.' and I can extract the distance by doing to_i
+NUM_STRS = (0..9).map{|num| num.to_s}
+c = "0"; c[0] = 48
+c = "9"; c[0] = 57
+
+c = "."; c[0] = 46
+"X" => 88
+
+			cell = ".9" (or "9.")
+			cell.chars.min	# => "."
+			cell.chars.max	# => "9"
+
+			cell = "X"
+			cell.chars.max	# => "X"
+			cell.chars.min	# => "X"
+			
+			c = ".39393"
+			c[0] # => 46 
+			c[1..-1] # => "39393"
+			c.chars.count # => 6
+			
+c.chars.count > 1 # confirm it contains more than just the "X" or "."
+
+---
+compare recursive timings to older code's timing
+
+multi-threaded recursion (3-threads):
+  thread 1: Manager: starts threads, times them, and kills them
+            A: spawn thread 2
+            B: check all threads for responses
+            C: ?possibly? kill threads if they're taking too long -- in order to request a new map
+            D: kill-all _other_ threads once an answer is found
+  thread 2: Run min-length-path search (using recursive code)
+            As soon as it constructs _a_ path of min-length it
+            A: spawns thread 3
+            B: (recursively) backs-up
+  thread 3: to continue working the path from that point
+
+
+---- BETTER:
+
+figure out the # of "checks" needed
+think about the symmetrical nature of the paths (i.e. since they get repeated)
+in order to get from the "start" to "end" there either needs to be a repeating cycle, or the distance has to be within the minimum # of required moves...
+
+This information should enable us to skip checking certain routes that are close, yet not symmetrical (i'm assuming #-theory will help e.g. odd or prime row #'s will not represent possible exists ?!? -- something like that (perhaps it's whether width * height represents a prime or odd # of moves...)) 
+
+
+-- OTHER:
+some other data-structure: not a matrix but a tree?!
+
+# --
+perhaps the data-structure can be _smart_ (i.e each cell knows if its neighbor is a bomb or not; perhaps we can query it for all paths that lead to an exit) perhaps we can eliminate "similar" paths
+
+node.ok -> right
+|
+v
+down
+
+# --
+
+node.nok -> right
+
+node.ok
+|
+V
+down
+
+node.ok = [right, down]
+# --
+
+[aside:
+unfortunately it's tough to trim potential paths because, even though:
+  go right and down == go down and right
+we need to account for the fact that our "solutions" will likely represent sub-paths that need to be repeated...
+]

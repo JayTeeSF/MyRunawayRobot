@@ -59,60 +59,78 @@ class Robot
       @path = []
     end
 
-    # def gen_filtered_paths valid_down, valid_right
+    def gen_filtered_paths valid_down, valid_right
+      results = []
+      
+      num_digits = valid_down + valid_right
+      big_base_ten = 2**(num_digits) - 1
+      
+      (0..big_base_ten).each do |base_ten|
+        path_ary = gen_path(base_ten,num_digits)
+        results << path_ary if filter path_ary, valid_down, valid_right
+      end
+      
+      results
+    end
+    
+    def gen_path(base_ten,num_digits)
+      (num_digits-1).downto(0).map {|slot| base_ten[slot] || 0}
+    end
+    
+    # only return paths with correct destination coords
+    def filter path_ary, down, right
+      path_ary.count(0) == right && path_ary.count(1) == down
+    end
+
+    def valid_destinations distance_away
+      results = []
+      # join.gsub(/1/,Robot.down()).gsub(/0/,Robot.right())
+      (0 .. distance_away).each do |num_down|
+        num_right = distance_away - num_down
+        results << [gen_filtered_paths(num_down, num_right).map{|digit| (digit == 1) ? "D" : "R" }, num_down, num_right] if map.avail?(num_down,num_right)
+      end
+      
+      results # represents valid paths
+    end
+
+    # def valid_locations_from from_row, from_col, path=[]
     #   results = []
     #   
-    #   num_digits = valid_down + valid_right
-    #   big_base_ten = 2**(num_digits) - 1
-    #   
-    #   (0..big_base_ten).each do |base_ten|
-    #     path_ary = gen_path(base_ten,num_digits)
-    #     results << path_ary if filter path_ary, valid_down, valid_right
+    #   move_down = Map.move(Robot.down(),from_row,from_col)
+    #   if map.avail?(*move_down)        
+    #     results << [*move_down]
+    #     path << Robot.down()
     #   end
-    #   
+    # 
+    #   move_right = Map.move(Robot.right(),from_row,from_col)
+    #   if map.avail?(*move_right)
+    #     results << [*move_right]
+    #     path << Robot.right()
+    #   end
+    # 
     #   results
     # end
-    # 
-    # def gen_path(base_ten,num_digits)
-    #   (num_digits-1).downto(0).map {|slot| base_ten[slot] || 0}
-    # end
-    # 
-    # # only return paths with correct destination coords
-    # def filter path_ary, down, right
-    #   path_ary.count(0) == right && path_ary.count(1) == down
-    # end
-    # 
-    # def valid_destinations distance_away
-    #   results = []
-    #   # join.gsub(/1/,Robot.down()).gsub(/0/,Robot.right())
-    #   (0 .. distance_away).each do |num_down|
-    #     num_right = distance_away - num_down
-    #     results << [gen_filtered_paths(num_down, num_right).map{|digit| (digit == 1) ? "D" : "R" }, num_down, num_right] if map.avail?(num_down,num_right)
-    #   end
-    #   
-    #   results # represents valid paths
-    # end
 
-    # def solve
-    #   valid_paths_and_coords = valid_destinations @min
-    #   
-    #   return false unless valid_paths_and_coords
-    #   valid_paths_and_coords.each do |valid_path, row, col|
-    #     path = solve_from valid_path, row, col
-    #     return path if path
-    #   end
-    #   
-    #   return false     
-    # end
+    def solve
+      valid_paths_and_coords = valid_destinations @min
+      
+      return false unless valid_paths_and_coords
+      valid_paths_and_coords.each do |valid_path, row, col|
+        path = solve_from valid_path, row, col
+        return path if path
+      end
+      
+      return false     
+    end
 
     def solve_from(current_path=[], row=0, col=0)
       # puts "called with: p:#{current_path}; r#{row}/c#{col}"
       path_size = current_path.size
-      if path_size > @max
+      if path_size < @min || path_size > @max
         # need to force code to undo last move...
         return false
-      elsif path_size >= @min 
-        if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
+      else
+        if map.verify current_path, row, col
 puts "Found it (#{current_path.inspect})!"
           @path = current_path
           return @path
@@ -146,7 +164,6 @@ puts "Found it (#{current_path.inspect})!"
 # puts "<--"
       return false
     end
-    alias :solve :solve_from
 
     #
     # a string version of the current path-array

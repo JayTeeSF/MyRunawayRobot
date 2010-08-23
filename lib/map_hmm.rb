@@ -6,8 +6,8 @@ class Map
 
   def initialize(options={})
     @debug = options[:debug]
-    # @known_solutions = (options[:cache_off].nil?) ? load : Hash.new{|h, k| h[k]=Hash.new(&h.default_proc) }
-    # options.delete(:cache_off)
+    @known_solutions = (options[:cache_off].nil?) ? load : Hash.new{|h, k| h[k]=Hash.new(&h.default_proc) }
+    options.delete(:cache_off)
     options.delete(:debug)
     #puts "options: #{options.inspect}"
 
@@ -199,7 +199,7 @@ class Map
   def debug_verify(path_ary=[], row=0, col=0)
     puts "verifying path (from: r#{row}/c#{col}): #{path_ary.inspect}..."
     # path_down, path_across = *[row, col]
-    while true # begin
+    begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         draw_matrix(row,col)
@@ -209,7 +209,7 @@ class Map
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
-    end # while true
+    end while true
 
     puts "dropping through..."
     return true
@@ -217,7 +217,7 @@ class Map
 
   def verify(path_ary=[], row=0, col=0)
     # path_down, path_across = *[row, col]
-    while true # begin
+    begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         return true if immediate_success(row,col)
@@ -226,7 +226,7 @@ class Map
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
-    end # while true
+    end while true
     
     
     return true
@@ -281,24 +281,24 @@ class Map
   #  return false
   #end
 
-  # # 
-  # # restore known solutions, from file
-  # # TODO: actually use JSON (require 'JSON', etc...)
-  # # 
-  # def load(solutions=@@solutions)
-  #   puts "returning hash of known solutions..." if @debug
-  #   known_solutions = Hash.new{|h, k| h[k]=Hash.new(&h.default_proc) }
-  #   if File.exists?(solutions)
-  #     handle = File.open(solutions, 'r')
-  #     while line = handle.gets
-  #       puts "matching line: #{line}" if @debug
-  #       m = /terrain \=\> ([^,]+), height \=\> (\d+), width \=\> (\d+), min \=\> (\d+), max \=\> (\d+), path \=\> (\w+)\s*$/.match(line)
-  #       puts "m(#{m.class.to_s}): #{m.inspect}" if @debug
-  #       known_solutions[m[0]][m[1]][m[2]][m[3]][m[4]] = m[5].split(//)
-  #     end
-  #   end
-  #   known_solutions
-  # end
+  # 
+  # restore known solutions, from file
+  # TODO: actually use JSON (require 'JSON', etc...)
+  # 
+  def load(solutions=@@solutions)
+    puts "returning hash of known solutions..." if @debug
+    known_solutions = Hash.new{|h, k| h[k]=Hash.new(&h.default_proc) }
+    if File.exists?(solutions)
+      handle = File.open(solutions, 'r')
+      while line = handle.gets
+        puts "matching line: #{line}" if @debug
+        m = /terrain \=\> ([^,]+), height \=\> (\d+), width \=\> (\d+), min \=\> (\d+), max \=\> (\d+), path \=\> (\w+)\s*$/.match(line)
+        puts "m(#{m.class.to_s}): #{m.inspect}" if @debug
+        known_solutions[m[0]][m[1]][m[2]][m[3]][m[4]] = m[5].split(//)
+      end
+    end
+    known_solutions
+  end
   # 
   # #
   # # append a known solution to our solutions-file
