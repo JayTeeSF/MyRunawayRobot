@@ -116,7 +116,8 @@ class Map
       end # end height-loop
     end # end width-loop
 
-    fill_in_dead_ends
+    fill_in_dead_ends false
+    fill_in_dead_ends true
 
     #returns = []
     #@width.times{ returns << "\n" }
@@ -125,14 +126,28 @@ class Map
   end
 
   # fill-in dead-ends in the matrix w/ bombs
-  def fill_in_dead_ends
-    (0..@height).reverse_each do |y_val|
-      (0..@width).reverse_each do |x_val|
-        next if y_val == @height || x_val == @width || fail(y_val, x_val)
+  def fill_in_dead_ends reverse=false
+    if reverse
+      (0..@height).each do |y_val|
+        (0..@width).each do |x_val|
+          next if y_val == 0 || x_val == 0 || fail(y_val, x_val)
 
-        if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
-          # puts "filling-in a dead-end"
-          @matrix[y_val][x_val] = Map.bomb
+          if fail( *Map.reverse(Robot.down, y_val,x_val) ) && fail( *Map.reverse(Robot.right, y_val,x_val) )
+            @matrix[y_val][x_val] = Map.bomb
+          end
+
+        end
+      end
+    else
+      (0..@height).reverse_each do |y_val|
+        (0..@width).reverse_each do |x_val|
+          next if y_val == @height || x_val == @width || fail(y_val, x_val)
+
+          if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
+            # puts "filling-in a dead-end"
+            @matrix[y_val][x_val] = Map.bomb
+          end
+
         end
       end
     end
@@ -171,6 +186,11 @@ class Map
     @matrix[row][col] == Map.bomb
   end
 
+  def self.reverse(direction, row, col, amount_down=1, amount_right=1)
+    (direction == Robot.down) ? row -= amount_down : col -= amount_right
+    [row,col]
+  end
+
   def self.move(direction, row, col, amount_down=1, amount_right=1)
     (direction == Robot.down) ? row += amount_down : col += amount_right
     [row,col]
@@ -180,26 +200,40 @@ class Map
     immediate_success(row,col) || @matrix[row][col] == Map.safe
   end
 
-  # # append path to path, just checking the end-pts
-  # def repeat_verify(num_down, num_right, row, col)
-  #   row ||= num_down
-  #   col ||= num_right
-  # 
-  #   begin
-  #     return false if fail(row, col)
-  #     row += num_down
-  #     col += num_right
-  #   end while !success(row,col)
-  # 
-  #   return true
-  # end
+  def repeat_verify(num_down, num_right,path_ary)
+    row ||= num_down
+    col ||= num_right
+  
+    begin
+      return false if fail(row, col)
+      row += num_down
+      col += num_right
+    end while !success(row,col)
+    
+    # want to run the path in reverse... until we reach the starting-pt (num_down,num_right)
+    reverse_verify(path_ary,row,col, num_down, num_right )
+  end
+
+  def reverse_verify(path_ary, num_down, num_right, row=0, col=0)
+    path_down, path_across = *[row, col] #stop when we get back here
+    while row != path_down && col != path_across
+      path_ary.reverse_each do |direction|
+        row, col = *Map.reverse(direction, row, col)
+        next if immediate_success(row,col) # winning, requires getting back to a spot ON the board
+        return false if fail(row,col)
+      end # end-each
+    end
+
+    return true
+  end
+
 
   #
   # return a string of robot directions
   #
   def debug_verify(path_ary=[], row=0, col=0)
     puts "verifying path (from: r#{row}/c#{col}): #{path_ary.inspect}..."
-    # path_down, path_across = *[row, col]
+    path_down, path_across = *[row, col]
     while true # begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
@@ -207,6 +241,7 @@ class Map
         return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
+      return reverse_verify(path_down, path_across, path_ary)
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
@@ -217,13 +252,14 @@ class Map
   end
 
   def verify(path_ary=[], row=0, col=0)
-    # path_down, path_across = *[row, col]
+    path_down, path_across = *[row, col]
     while true # begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
+      return reverse_verify(path_down, path_across, path_ary)
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
