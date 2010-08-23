@@ -6,6 +6,10 @@
  # next slow-down:
  98         [52,52]   (18..31)     p> DDRRRRRRDDDRDDDRRDDRRDDRRDDDR<  332.875
 
+103         [54,54]   (19..32)     p>       DDRDDDRRDDRDRDDRRDDRRRR<  374.85
+ # then again:
+104         [55,55]   (19..32)     p>   RRDDDRDDDRDRDRRRDDDRRRDDRDR<  849.633
+
 ---
 search for: ---- NEW RECURSIVE ROBOT:
 
