@@ -35,7 +35,7 @@ class Map
     #@check_bad = @use_known_bad
 
     clear_matrix
-    puts "map-config constructing matrix"
+    #puts "map-config constructing matrix"
     construct_matrix
   end
 
@@ -49,7 +49,7 @@ class Map
 
   # human readable
   def draw_matrix(row=nil,col=nil)
-    return unless @debug
+    # return unless @debug
     construct_matrix if @matrix.empty?
     if (row && col)
       # deep copy the array, before inserting our robot
@@ -118,9 +118,10 @@ class Map
 
     fill_in_dead_ends
 
-    returns = []
-    @width.times{ returns << "\n" }
-    puts "constructed:\n#{@matrix.zip(returns)}"
+    #returns = []
+    #@width.times{ returns << "\n" }
+    #puts "constructed:\n#{@matrix.zip(returns)}"
+    #draw_matrix
   end
 
   # fill-in dead-ends in the matrix w/ bombs
@@ -130,7 +131,7 @@ class Map
         next if y_val == @height || x_val == @width || fail(y_val, x_val)
 
         if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
-          puts "filling-in a dead-end"
+          # puts "filling-in a dead-end"
           @matrix[y_val][x_val] = Map.bomb
         end
       end
