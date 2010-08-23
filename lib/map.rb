@@ -132,7 +132,7 @@ class Map
         (0..@width).each do |x_val|
           next if y_val == 0 || x_val == 0 || fail(y_val, x_val)
 
-          if fail( *Map.reverse(Robot.down, y_val,x_val) ) && fail( *Map.reverse(Robot.right, y_val,x_val) )
+          if fail( *Map.reverse_move(Robot.down, y_val,x_val) ) && fail( *Map.reverse_move(Robot.right, y_val,x_val) )
             @matrix[y_val][x_val] = Map.bomb
           end
 
@@ -186,7 +186,7 @@ class Map
     @matrix[row][col] == Map.bomb
   end
 
-  def self.reverse(direction, row, col, amount_down=1, amount_right=1)
+  def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
     (direction == Robot.down) ? row -= amount_down : col -= amount_right
     [row,col]
   end
@@ -201,28 +201,35 @@ class Map
   end
 
   def repeat_verify(num_down, num_right,path_ary)
-    row ||= num_down
-    col ||= num_right
+    row = num_down
+    col = num_right
   
+  # get us to the _end_ of the board (or fail)
     begin
       return false if fail(row, col)
       row += num_down
       col += num_right
     end while !success(row,col)
     
-    # want to run the path in reverse... until we reach the starting-pt (num_down,num_right)
+    # now run through the path in reverse... until we reach the starting-pt (num_down,num_right) (or fail)
     reverse_verify(path_ary,row,col, num_down, num_right )
   end
 
-  def reverse_verify(path_ary, num_down, num_right, row=0, col=0)
-    path_down, path_across = *[row, col] #stop when we get back here
-    while row != path_down && col != path_across
-      path_ary.reverse_each do |direction|
-        row, col = *Map.reverse(direction, row, col)
+  def reverse_verify(path_ary, row, col, start_row=0, start_col=0)
+    reversed_path = path_ary.reverse
+puts "following rp#{reversed_path} to get from: r#{row}/c#{col} back-to: sr#{start_row}/sc#{start_col}"
+    
+    begin
+    # while true
+      reversed_path.each do |direction|
+        row, col = *Map.reverse_move(direction, row, col)
+puts "now at: r#{row}/c#{col}"
         next if immediate_success(row,col) # winning, requires getting back to a spot ON the board
         return false if fail(row,col)
+        return true if row == start_row && col == start_col
       end # end-each
-    end
+
+  end until row <= start_row && col <= start_col
 
     return true
   end
@@ -241,7 +248,7 @@ class Map
         return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
-      return reverse_verify(path_down, path_across, path_ary)
+      return repeat_verify(path_down, path_across, path_ary)
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
@@ -259,7 +266,7 @@ class Map
         return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
-      return reverse_verify(path_down, path_across, path_ary)
+      return repeat_verify(path_down, path_across, path_ary)
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
