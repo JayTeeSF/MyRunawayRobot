@@ -54,6 +54,11 @@ class Map
     if (row && col)
       # deep copy the array, before inserting our robot
       matrix = Marshal.load(Marshal.dump(@matrix))
+
+#puts "mr#{row}:" + matrix[row]
+      #tmp = matrix[row].split(//)
+      #tmp[col] = (safe?(row,col)) ? Map.robot() : Map.boom
+      #matrix[row] = tmp.join
       matrix[row][col] = (matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
     else
       matrix = @matrix
@@ -69,6 +74,7 @@ class Map
 
   def construct_matrix
     return unless @matrix.empty?
+    puts "constructing matrix..."
     next_cell = cell_generator
     row_bomb = {-1 => 0}
 
@@ -116,23 +122,46 @@ class Map
       end # end height-loop
     end # end width-loop
 
-    fill_in_dead_ends
+    fill_in_dead_ends true
+    fill_in_dead_ends false
 
     #returns = []
     #@width.times{ returns << "\n" }
     #puts "constructed:\n#{@matrix.zip(returns)}"
     #draw_matrix
+    #@matrix = stringify_rows(@matrix) #<-- takes way too long to decode
+    # puts "matrix[0].class = #{@matrix[0].class}"
+  end
+
+  def stringify_rows matrix
+    (0..(matrix.size-1)).each do |y_val|
+      matrix[y_val] = matrix[y_val].join
+    end
+    matrix
   end
 
   # fill-in dead-ends in the matrix w/ bombs
-  def fill_in_dead_ends
-    (0..@height).reverse_each do |y_val|
-      (0..@width).reverse_each do |x_val|
-        next if y_val == @height || x_val == @width || fail(y_val, x_val)
-
-        if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
-          # puts "filling-in a dead-end"
-          @matrix[y_val][x_val] = Map.bomb
+  def fill_in_dead_ends reverse=false
+    if reverse
+      (0..@height).each do |y_val|
+        (0..@width).each do |x_val|
+          next if y_val == 0 || x_val == 0 || fail(y_val, x_val)
+  
+          if fail( *Map.reverse_move(Robot.down, y_val,x_val) ) && fail( *Map.reverse_move(Robot.right, y_val,x_val) )
+            # puts "filling-in a dead-end"
+            @matrix[y_val][x_val] = Map.bomb
+          end
+        end
+      end
+    else
+      (0..@height).reverse_each do |y_val|
+        (0..@width).reverse_each do |x_val|
+          next if y_val == @height || x_val == @width || fail(y_val, x_val)
+  
+          if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
+            # puts "filling-in a dead-end"
+            @matrix[y_val][x_val] = Map.bomb
+          end
         end
       end
     end
@@ -158,17 +187,24 @@ class Map
     row > @height || col > @width
   end
 
-  # 
-  # def done(row,col)
-  #   return 1 if row > @height || col > @width # @matrix[row][col] == Map.success || 
-  #   #success(row,col) 
-  #   return 0 if @matrix[row][col] == Map.bomb
-  #   #fail(row,col) 
-  #   return -1
-  # end
-
+  #def array_fail(row,col)
   def fail(row,col)
     @matrix[row][col] == Map.bomb
+  end
+
+  #def fail(row,col)
+  #  @matrix[row].split(//)[col] == Map.bomb
+  #end
+
+  def safe?(row,col)
+#puts "mr#{row}/c#{col}: #{@matrix[row].inspect}"
+    #@matrix[row].split(//)[col] == Map.safe
+#puts "ok"
+    @matrix[row][col] == Map.safe
+  end
+
+  def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
+    move direction, row, col, -1, -1
   end
 
   def self.move(direction, row, col, amount_down=1, amount_right=1)
@@ -177,7 +213,7 @@ class Map
   end
 
   def avail?(row,col)
-    immediate_success(row,col) || @matrix[row][col] == Map.safe
+    immediate_success(row,col) || safe?(row,col)
   end
 
   # # append path to path, just checking the end-pts

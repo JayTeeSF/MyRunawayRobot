@@ -27,7 +27,7 @@ class Robot
 
       @map.config(options)
 
-      @map.draw_matrix(@start_x, @start_y)
+      #@map.draw_matrix(@start_x, @start_y)
       solve() if options[:only_config].nil?
     end
 
