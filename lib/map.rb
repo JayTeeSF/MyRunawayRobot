@@ -1,7 +1,11 @@
+require './lib/binary_tree.rb'
+
 class Map
+  
+  MAX_Y = 2
   # BAD_CYCLE_LEN = 5
   @@solutions = './solutions.txt'
-  attr_accessor :height, :width, :terrain, :matrix, :debug, :max_cycle
+  attr_accessor :height, :width, :terrain, :matrix, :debug, :max_cycle, :bomb_tree
   #, :known_bad_cycles, :use_known_bad, :store_bad, :check_bad, :bad_cycle_len
 
   def initialize(options={})
@@ -14,7 +18,7 @@ class Map
     # must call config from elsewhere!
     # config(options) if options && options != {}
   end
-
+  
   #
   # NOTE: since these aren't optional, I shouldn't use an options hash
   # TODO: replace hash w/ argument params
@@ -23,9 +27,13 @@ class Map
   #
   def config(options={})
     @terrain = options[:terrain_string]
-    @width = options[:board_x] - 1
+    @num_wide = options[:board_x]
+    @width = @num_wide - 1
     @height = options[:board_y] - 1
     @max_cycle = options[:ins_max]
+    # @safe_arys = []
+    @bomb_tree = BinaryTree.new
+    @max_y = nil
     #@known_bad_cycles = []
     #bad_cycle_len = nil
 
@@ -37,6 +45,7 @@ class Map
     clear_matrix
     #puts "map-config constructing matrix"
     construct_matrix
+    clear_matrix
   end
 
   def clear_matrix
@@ -118,12 +127,87 @@ class Map
 
     fill_in_dead_ends false
     fill_in_dead_ends true
-
+    fill_bombs
+    
     #returns = []
     #@width.times{ returns << "\n" }
     #puts "constructed:\n#{@matrix.zip(returns)}"
-    #draw_matrix
+
+    # draw_matrix
+    puts @bomb_tree
   end
+  
+  # not strings: row_col
+  # but a hash:
+  # row * @width + col to reference each cell uniquely!
+  
+  # def max_y
+  #   @max_y ||= begin
+  #     MAX_Y / @width
+  #     # result = 60 / @width # 200 => 579(ish) sec; 400 => 878.797 sec;
+  #     # 128 => ?
+  #     # 100 => 389.026;
+  #     # 64 => ?
+  #     # 60 => 374.379;
+  #     # 32 => 382.785
+  #     # 16 => ?
+  #     # 10 => 384.86
+  #     # 8 => 383.056
+  #     # 7 => ?
+  #     # 2 => 370.985
+  #     # 1 => ?
+  #     # puts "max_y: #{result}"
+  #     # result
+  #   end
+  # end
+
+  def fill_bombs
+    bombs = []
+    # @safe_arys = []
+    # i = -1 # we'll increment to 0
+    (0..@height).each do |y_val|
+      # if ((0 == max_y) || (0 == (y_val % max_y))) # @safe_arys[i].length > 380
+      #   i += 1
+      #   @safe_arys[i] = []
+      # end      
+      (0..@width).each do |x_val|
+        # @bombs[i] << "#{y_val}_#{x_val}" if safe(y_val, x_val)
+        if fail(y_val, x_val)
+          bombs << tree_val(y_val, x_val)
+        end
+      end
+    end
+    
+    bombs.shuffle.each do |bomb|
+      @bomb_tree.add(bomb)
+    end
+  end
+  
+  def tree_val row, col
+    (row * @num_wide) + col + 1
+  end
+  
+  # def bombs_include?(str, row)
+  def bombs_include?(row, col)
+    # # @bombs.each do |safe_ary|
+    # i = (0 == max_y) ? row : row.div(max_y)
+    # # puts "i: #{i}: => #{bombs[i].inspect}"
+    # return false if i > (@bombs.size - 1)
+    # return true if @bombs[i].include?(str)
+    # # end
+    # return false
+    return @bomb_tree.find(tree_val(row, col))
+  end
+
+  # 
+  # def fill_bomb_ary
+  #   @bomb_ary = []
+  #   (0..@height).each do |y_val|
+  #     (0..@width).each do |x_val|
+  #       @bomb_ary << "#{y_val}_#{x_val}" if fail(y_val, x_val)
+  #     end
+  #   end
+  # end
 
   # fill-in dead-ends in the matrix w/ bombs
   def fill_in_dead_ends reverse=false
@@ -185,6 +269,10 @@ class Map
   def fail(row,col)
     @matrix[row][col] == Map.bomb
   end
+  
+  def safe(row,col)
+    @matrix[row][col] == Map.safe
+  end
 
   def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
     (direction == Robot.down) ? row -= amount_down : col -= amount_right
@@ -197,82 +285,121 @@ class Map
   end
 
   def avail?(row,col)
-    immediate_success(row,col) || @matrix[row][col] == Map.safe
+    # immediate_success(row,col) || @matrix[row][col] == Map.safe
+    immediate_success(row,col) || !bombs_include?(row, col)
   end
 
-  def repeat_verify(num_down, num_right,path_ary)
-    row = num_down
-    col = num_right
-  
-  # get us to the _end_ of the board (or fail)
-    begin
-      return false if fail(row, col)
-      row += num_down
-      col += num_right
-    end while !success(row,col)
-    
-    # now run through the path in reverse... until we reach the starting-pt (num_down,num_right) (or fail)
-    reverse_verify(path_ary,row,col, num_down, num_right )
-  end
-
-  def reverse_verify(path_ary, row, col, start_row=0, start_col=0)
-    reversed_path = path_ary.reverse
-puts "following rp#{reversed_path} to get from: r#{row}/c#{col} back-to: sr#{start_row}/sc#{start_col}"
-    
-    begin
-    # while true
-      reversed_path.each do |direction|
-        row, col = *Map.reverse_move(direction, row, col)
-puts "now at: r#{row}/c#{col}"
-        next if immediate_success(row,col) # winning, requires getting back to a spot ON the board
-        return false if fail(row,col)
-        return true if row == start_row && col == start_col
-      end # end-each
-
-  end until row <= start_row && col <= start_col
-
-    return true
-  end
+#   def repeat_verify(num_down, num_right,path_ary)
+#     row = num_down
+#     col = num_right
+#   
+#   # get us to the _end_ of the board (or fail)
+#     begin
+#       return false if fail(row, col)
+#       row += num_down
+#       col += num_right
+#     end while !success(row,col)
+#     
+#     # now run through the path in reverse... until we reach the starting-pt (num_down,num_right) (or fail)
+#     reverse_verify(path_ary,row,col, num_down, num_right )
+#   end
+# 
+#   def reverse_verify(path_ary, row, col, start_row=0, start_col=0)
+#     reversed_path = path_ary.reverse
+# # puts "following rp#{reversed_path} to get from: r#{row}/c#{col} back-to: sr#{start_row}/sc#{start_col}"
+#     
+#     begin
+#     # while true
+#       reversed_path.each do |direction|
+#         row, col = *Map.reverse_move(direction, row, col)
+# # puts "now at: r#{row}/c#{col}"
+#         next if success(row,col) # winning, requires getting back to a spot ON the board
+#         return false if fail(row,col)
+#         return true if row == start_row && col == start_col
+#       end # end-each
+# # rescue Exception => e
+# #   puts "r#{row}/c#{col}; e: #{e.message}"
+# #   draw_matrix
+# #   puts "drew it"
+# #   raise e
+#   
+#   end until row <= start_row && col <= start_col
+# 
+#     return true
+#   end
 
 
   #
   # return a string of robot directions
   #
+  
   def debug_verify(path_ary=[], row=0, col=0)
     puts "verifying path (from: r#{row}/c#{col}): #{path_ary.inspect}..."
-    path_down, path_across = *[row, col]
-    while true # begin
+    while ! success(row, col)
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
-        draw_matrix(row,col)
-        return true if immediate_success(row,col)
-        return false if fail(row,col)
+        # draw_matrix(row, col)
+  puts "moved-to: r#{row}/c#{col}"
+        if bombs_include?(row, col)
+  puts "found bomb..."
+  unless success(row, col)
+          return false
+        end
+        end
       end # end-each
-      return repeat_verify(path_down, path_across, path_ary)
-      # not sure why, but this early-return is WORKING; and FAST
-      # return true
-      # return repeat_verify(path_down, path_across, row, col)
-    end # while true
-
+    end
     puts "dropping through..."
     return true
   end
 
+  # def debug_verify(path_ary=[], row=0, col=0)
+  #   puts "verifying path (from: r#{row}/c#{col}): #{path_ary.inspect}..."
+  #   path_down, path_across = *[row, col]
+  #   while true # begin
+  #     path_ary.each do |direction|
+  #       row, col = *Map.move(direction, row, col)
+  #       draw_matrix(row,col)
+  #       return true if immediate_success(row,col)
+  #       return false if fail(row,col)
+  #     end # end-each
+  #     return bulk_verify(path_down, path_across, path_ary)
+  #     # not sure why, but this early-return is WORKING; and FAST
+  #     # return true
+  #     # return repeat_verify(path_down, path_across, row, col)
+  #   end # while true
+  # 
+  #   puts "dropping through..."
+  #   return true
+  # end
+
+  # def verify(path_ary=[], row=0, col=0)
+  #   path_down, path_across = *[row, col]
+  #   while true # begin
+  #     path_ary.each do |direction|
+  #       row, col = *Map.move(direction, row, col)
+  #       return true if immediate_success(row,col)
+  #       return false if fail(row,col)
+  #     end # end-each
+  #     return bulk_verify(path_down, path_across, path_ary)
+  #     # not sure why, but this early-return is WORKING; and FAST
+  #     # return true
+  #     # return repeat_verify(path_down, path_across, row, col)
+  #   end # while true
+  #   
+  #   
+  #   return true
+  # end
+
   def verify(path_ary=[], row=0, col=0)
-    path_down, path_across = *[row, col]
-    while true # begin
+    # path_down, path_across = *[row, col]
+    while ! success(row, col)
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
-        return true if immediate_success(row,col)
-        return false if fail(row,col)
+        if bombs_include?(row, col)
+          return false unless success(row, col)
+        end
       end # end-each
-      return repeat_verify(path_down, path_across, path_ary)
-      # not sure why, but this early-return is WORKING; and FAST
-      # return true
-      # return repeat_verify(path_down, path_across, row, col)
-    end # while true
-    
-    
+    end
     return true
   end
 
