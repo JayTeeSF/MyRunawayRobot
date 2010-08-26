@@ -71,32 +71,32 @@ class RobotTest < Test::Unit::TestCase
       #  assert_equal([['D'],['R']], paths_retrieved)
       #end
 
-      def test_navigation
-        # @down_config = @impossible_config.merge({:terrain_string => ".X.X"})
-        puts "setup down_config"
-        @robot = Robot.new @down_config
-
-        puts "map row0: #{@robot.map.matrix[0]}"
-        assert(@robot.map.matrix[0][0].chars.min == Map.safe)
-        # puts "map row0col1: #{@robot.map.matrix[0][1]}"
-        assert(@robot.map.matrix[0][1].chars.min == Map.bomb)
-
-
-        puts "map row1: #{@robot.map.matrix[1]}"
-        # puts "map row0col0: #{@robot.map.matrix[1][0]}"
-        assert(@robot.map.matrix[1][0].chars.min == Map.safe)
-        # puts "map row0col1: #{@robot.map.matrix[1][1]}"
-        assert(@robot.map.matrix[1][1].chars.min == Map.bomb)
-
-        # puts "should be able to move down, but not right"
-        row=col = 0
-        # puts "I shall go down from r:#{row}/c:#{col}"
-        assert( @robot.map.avail?( *Map.move(Robot.down(), row, col) ) )
-        # puts "I shant go right from r:#{row}/c:#{col}"
-        # row, col = 
-
-        assert(! @robot.map.avail?( *Map.move( Robot.right(), row, col) ) )
-      end
+      # def test_navigation
+      #   # @down_config = @impossible_config.merge({:terrain_string => ".X.X"})
+      #   puts "setup down_config"
+      #   @robot = Robot.new @down_config
+      # 
+      #   puts "map row0: #{@robot.map.matrix[0]}"
+      #   assert(@robot.map.matrix[0][0].chars.min == Map.safe)
+      #   # puts "map row0col1: #{@robot.map.matrix[0][1]}"
+      #   assert(@robot.map.matrix[0][1].chars.min == Map.bomb)
+      # 
+      # 
+      #   puts "map row1: #{@robot.map.matrix[1]}"
+      #   # puts "map row0col0: #{@robot.map.matrix[1][0]}"
+      #   assert(@robot.map.matrix[1][0].chars.min == Map.safe)
+      #   # puts "map row0col1: #{@robot.map.matrix[1][1]}"
+      #   assert(@robot.map.matrix[1][1].chars.min == Map.bomb)
+      # 
+      #   # puts "should be able to move down, but not right"
+      #   row=col = 0
+      #   # puts "I shall go down from r:#{row}/c:#{col}"
+      #   assert( @robot.map.avail?( *Map.move(Robot.down(), row, col) ) )
+      #   # puts "I shant go right from r:#{row}/c:#{col}"
+      #   # row, col = 
+      # 
+      #   assert(! @robot.map.avail?( *Map.move( Robot.right(), row, col) ) )
+      # end
 
       # eventually we need an expected time associated with this
       # REE: Finished in 16.276319 seconds.
