@@ -1,5 +1,6 @@
 require 'test/unit'
-require './lib/map.rb'
+# require './lib/map.rb' # for 1.9.2
+require 'lib/map.rb' # for rbx
 require 'rubygems'
 require 'ruby-debug'
 

@@ -1,4 +1,5 @@
-require './lib/map.rb'
+require './lib/map.rb' # for 1.9.2
+# require 'lib/map.rb' # for rbx
 class Robot
   attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug
 

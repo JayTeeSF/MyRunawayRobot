@@ -1,6 +1,6 @@
 require 'test/unit'
-# require './lib/map.rb'
-require './lib/robot.rb'
+# require './lib/robot.rb' # for 1.9.2
+require 'lib/robot.rb' # for rbx
 
 class RobotTest < Test::Unit::TestCase
 
@@ -118,6 +118,8 @@ class RobotTest < Test::Unit::TestCase
       end
 
       def test_long_performance
+        # rbx-1.0.1 143.73234
+        # rbx-1.0.1 (w/ fill-in dead-ends): 127.784013
         expected_time_in_secs = 161.941 # new personal best: 242.912, bog:202.738, bog:163.7; wha?: 256.265; k: 203.64; hmm: 207.532; k: 161.941
         perf_tests(expected_time_in_secs, @level_119_config, 'level 119 (via fast-jRuby)', 5)
       end

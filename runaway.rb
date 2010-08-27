@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
-require './lib/robot.rb'
+#require './lib/robot.rb' #<-- for 1.9.2
+require 'lib/robot.rb' #<-- for rbx
 require 'yaml'
 # http://www.hacker.org/runaway/index.php
 require 'net/http'

@@ -1,6 +1,7 @@
 require 'test/unit'
 
-require './lib/robot.rb'
+# require './lib/robot.rb' # for 1.9.2
+require 'lib/robot.rb' # for rbx
 
 class RobotRerun < Test::Unit::TestCase
 
@@ -24,8 +25,8 @@ class RobotRerun < Test::Unit::TestCase
     puts "reading config file"
     while conf_line = conf_file.readline
       level += 1
-      config[level.to_s] = @base_config.dup
-      config[level.to_s].merge!(eval(conf_line.chomp))
+      config[level] = @base_config.dup
+      config[level].merge!(eval(conf_line.chomp))
       print "."
     end    
   rescue EOFError
@@ -36,7 +37,7 @@ class RobotRerun < Test::Unit::TestCase
   end
 
   def test_all_levels
-    @config.keys.each do |level|
+    @config.keys.sort.each do |level|
       try level
     end
   end
@@ -45,7 +46,12 @@ class RobotRerun < Test::Unit::TestCase
     @robot = Robot.new @config[level].merge(:debug => false)
 
     puts "\n\nstarting level #{level}..."
+    begin_time = Time.now
     assert_nothing_raised { @path = @robot.solve }
+    end_time = Time.now
+    actual_time_in_secs = end_time - begin_time
+    puts "actually took #{actual_time_in_secs} seconds."
+
     assert( @path && !@path.empty?)
   end
 end
