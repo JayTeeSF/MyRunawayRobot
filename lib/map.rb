@@ -1,4 +1,6 @@
 class Map
+# TODO: make matrix an array of BitField(s)
+
   # BAD_CYCLE_LEN = 5
   @@solutions = './solutions.txt'
   attr_accessor :height, :width, :terrain, :matrix, :debug, :max_cycle
@@ -240,7 +242,7 @@ class Map
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         draw_matrix(row,col)
-        return true if immediate_success(row,col)
+        #return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
       # not sure why, but this early-return is WORKING; and FAST
@@ -250,6 +252,8 @@ class Map
 
     puts "dropping through..."
     return true
+  rescue NoMethodError => e
+    return true
   end
 
   def verify(path_ary=[], row=0, col=0)
@@ -257,7 +261,7 @@ class Map
     while true # begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
-        return true if immediate_success(row,col)
+        #return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
       # not sure why, but this early-return is WORKING; and FAST
@@ -266,6 +270,8 @@ class Map
     end # while true
     
     
+    return true
+  rescue NoMethodError => e
     return true
   end
 
