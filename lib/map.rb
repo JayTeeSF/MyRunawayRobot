@@ -215,6 +215,12 @@ class Map
   def avail?(row,col)
     immediate_success(row,col) || safe?(row,col)
   end
+  
+  def unavail?(row,col)
+    @matrix[row][col] == Map.bomb
+  rescue Exception => e
+    return true
+  end
 
   # # append path to path, just checking the end-pts
   # def repeat_verify(num_down, num_right, row, col)
@@ -240,7 +246,7 @@ class Map
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
         draw_matrix(row,col)
-        return true if immediate_success(row,col)
+        # return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
       # not sure why, but this early-return is WORKING; and FAST
@@ -249,6 +255,7 @@ class Map
     end # while true
 
     puts "dropping through..."
+  rescue Exception => e
     return true
   end
 
@@ -257,15 +264,15 @@ class Map
     while true # begin
       path_ary.each do |direction|
         row, col = *Map.move(direction, row, col)
-        return true if immediate_success(row,col)
+        # return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
     end # while true
-    
-    
+
+  rescue Exception => e    
     return true
   end
 
