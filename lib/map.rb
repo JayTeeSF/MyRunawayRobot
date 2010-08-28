@@ -1,3 +1,6 @@
+# require './lib/bit_field.rb' # 1.9.2
+require 'lib/bit_field.rb' # rbx
+
 class Map
 # TODO: make matrix an array of BitField(s)
 
@@ -57,21 +60,17 @@ class Map
       # deep copy the array, before inserting our robot
       matrix = Marshal.load(Marshal.dump(@matrix))
 
-#puts "mr#{row}:" + matrix[row]
-      #tmp = matrix[row].split(//)
-      #tmp[col] = (safe?(row,col)) ? Map.robot() : Map.boom
-      #matrix[row] = tmp.join
       matrix[row][col] = (matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
     else
       matrix = @matrix
     end
 
     puts "\n#-->"
-    matrix.each {|current_row| puts "#{current_row * ' '}"}
+    matrix.each {|current_row| puts "#{current_row.to_s.to_a.join(' ')}"}
     puts "#<--\n"
 
   rescue Exception => e
-    puts "Unable to display this matrix: #{e.message}"
+    puts "Unable to display this matrix: #{e.inspect}"
   end
 
   def construct_matrix
@@ -82,10 +81,10 @@ class Map
 
     (0..@height).each do |y_val|
       final_row_bomb = nil
-      prev_row_bomb = row_bomb[y_val -1] ||= @width + 1
-      matrix_row = []
+      prev_row_bomb = row_bomb[y_val - 1] ||= @width + 1
+      matrix_row = BitField.new(@width).dup
       (0 .. @width).each do |x_val|
-        ascii_char = next_cell.call
+        ascii_char = next_cell.call.to_i
         if final_row_bomb
           ascii_char = Map.bomb
         else
@@ -94,12 +93,8 @@ class Map
           end
         end
 
-        matrix_row << ascii_char
+        matrix_row[x_val] = (ascii_char == Map.bomb) ? 1 : 0
       end # end-width
-
-      # final_char =  << final_row_bomb ? Map.bomb : Map.success
-      # # append enough to ensure any repeated-cycle ends on a square that can be checked # nonsense!
-      # max_cycle.times { matrix_row << final_char }
 
       @matrix << matrix_row
     end # end height
@@ -108,14 +103,14 @@ class Map
     col_bomb = {-1 => 0}
     (0 .. @width).each do |x_val|
       final_col_bomb = nil
-      prev_col_bomb = col_bomb[x_val -1] ||= @height + 1
+      prev_col_bomb = col_bomb[x_val - 1] ||= @height + 1
       (0 .. @height).each do |y_val|
+# puts "does bitfield for matrix[x_val(#{x_val})] exist? #{@matrix[y_val]}"
         ascii_char = @matrix[y_val][x_val]
         if final_col_bomb
           # puts "COL: xxx"
-          @matrix[y_val][x_val] = Map.bomb
+          @matrix[y_val][x_val] = 1 # Map.bomb
         else
-
           if y_val >= (prev_col_bomb - 1) && Map.bomb == ascii_char
             col_bomb[x_val] = final_col_bomb = y_val
           end
@@ -130,7 +125,7 @@ class Map
     #returns = []
     #@width.times{ returns << "\n" }
     #puts "constructed:\n#{@matrix.zip(returns)}"
-    #draw_matrix
+    draw_matrix
     #@matrix = stringify_rows(@matrix) #<-- takes way too long to decode
     # puts "matrix[0].class = #{@matrix[0].class}"
   end
@@ -178,7 +173,7 @@ class Map
     terrain_ary = @terrain.split(//)
     increment = 1
     i = -1
-    lambda { i += increment; terrain_ary[i] }
+    lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0") }
   end
 
   def immediate_success(row,col)
@@ -284,11 +279,11 @@ class Map
   end
 
   def self.bomb
-    'X'
+    1 #'X'
   end
 
   def self.safe
-    '.'
+    0 #'.'
   end
 
   # def self.value_of ascii_char

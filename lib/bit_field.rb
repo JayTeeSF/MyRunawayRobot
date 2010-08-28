@@ -1,26 +1,30 @@
 class BitField
-  attr_reader :size
+  attr_reader :size, :element_width
   include Enumerable
 
-  ELEMENT_WIDTH = 32
+  SMALL = 32
+  MEDIUM = 64
+  LARGE = 128
 
   def initialize(size)
     @size = size
-    @field = Array.new(((size - 1) / ELEMENT_WIDTH) + 1, 0)
+    @element_width = (size < SMALL) ? SMALL : (size >= SMALL) ? MEDIUM : (size >= MEDIUM) ? LARGE : size + 1
+    # puts "size: #{size} => ew: #{@element_width}"
+    @field = Array.new(((size - 1) / element_width) + 1, 0)
   end
-  
+
   # Set a bit (1/0)
   def []=(position, value)
     if value == 1
-      @field[position / ELEMENT_WIDTH] |=1 << (position % ELEMENT_WIDTH)
-    elsif (@field[position / ELEMENT_WIDTH]) & (1 << (position % ELEMENT_WIDTH)) != 0
-      @field[position / ELEMENT_WIDTH] ^= 1 << (position % ELEMENT_WIDTH)
+      @field[position / element_width] |=1 << (position % element_width)
+    elsif (@field[position / element_width]) & (1 << (position % element_width)) != 0
+      @field[position / element_width] ^= 1 << (position % element_width)
     end
   end
 
   # Read a bit (1/0)
   def [](position)
-    @field[position / ELEMENT_WIDTH] & 1 << (position % ELEMENT_WIDTH) > 0 ? 1 : 0
+    @field[position / element_width] & 1 << (position % element_width) > 0 ? 1 : 0
   end
 
   # Iterate over each bit

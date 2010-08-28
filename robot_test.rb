@@ -53,24 +53,6 @@ class RobotTest < Test::Unit::TestCase
         @level_119_config = @impossible_config.merge({:debug => false, :terrain_string => "..........X.X.X........XX..XXX....XX..XX.......X.X..X..XX.X....X...XX........XXX................X..........X.......X........X......................X..XXX...............X..XX............X.X.......X.X...X....X.X....X...X..X.X.X................X..X.X.....X......XXX....X........X..........X......X..............X...X.....X........XXX...XX...............X.X...XX..XX.......XX.....X......X.X.XX.....XXX.......X..X...X.X..XX.........X............X....X......X.XX.....X...X......X.X...X.XXX..X..X....X.X.X.....X....X.........XX.X..X....X..X..........X...X..............X.X.......XX..X........X.X.....XX......X..X..X..X....X..XX.XX..XX.X....X........X.....X.........X...XX.X....X.......X.X..X....X.X....X.......XX...........X..X.X....X..XX....XX.......X..X.XX...........X.........................X.X..X.X....XX..XX...XX.X..X.........X....X.........X....X.XXX.X.X............XX......XX..XX..X..X.X....X......X.....XX.................XXX..............XX.....X................X....XX.X........XX..............X..X....X.....X.....X....X.......X.XX.....XXXXX........X......X..X...XX.X..XX..X.XXX..X..X....X....X......X.................X....X.....X.........X...............X........X...XXXX....XX...X...XXX...X....XX.......X....X........X.....X..X.X......XXX.XX...X.......X...X................X.........XX...........X...............X..........X....X....X...XXX.X...X.XX.....X................X....XX..X.XX....X...........X..X.X......X.......XX........X........XX....X..........X.X.XX.........X.X..X....X...X.X..........X...............X......X....XX.X.............X..........X..X..XXX..XX...........X.......X...X..X......X..XX....X............XX..............X...X...X.X.......XXX............XXX.X..X...XX...X...........X...........X..X.X............X.X.....X....X..X.X.XX.............X................X.X.X..........XX.........X......XX.X.X....X.X..X.X.X....X.............X.X.XX.........X..X.XX.XX..........XX......X..X....X.X......XXX.X.X.X......XXX...XX..................X.........X.....X...X.....X..........X....X.X.XX....X.......X...XXXX...X..........XX..X............X.....X.XX.....X..X..........X.....X......X....X.....X.X.X...X.X..XX.X.....X....X.........XX..X....X.X.X.XXX....X..XX...X.XXX....X...XXXX....X......XX..........X........X..X.X....XX........X...XX....X...XX.....X......X..X......X..XX.......X........XX....X....X.........X..........X...X..X.X.....X....X......X......X.X...X............................X..X......X......X.X..........X......X.X........X..X.....X....X......X...XX.X.X..X......X.X..XX..........XXX.....X..X.....X..X....X..X..X..X.X..X......X.....X.....X.X...X.........XXX...X..X.X.X.X.........X..........XX..X..X..XXX...XX.......X...........X....X.......X.....X.............X......X.......X....XX.....X...X....X.......XX...XX.XX................XX..X.....X.X.......X......X...........XXX.....X.X..X....X.............X...XX...X............X.......X..X....XX..XX...X.X.XX...............X.X..X.......................XX.........X........X.X........X....X.......X.................XX...XX..X.X........XX.X...X...........X...X.......XXX......................................XX..X...X....X..X...X...X...XX..XXXX....X..........XX.XXX..X...X.....X.X.X...XX....X..X..X...X.X.....X......XX.XX.X.X.X...............XX.XX.X......X.......X......XXXXX.XX.........................X...X.....X...XX.......X...X...............X...X....X.....X...........X...........X.......X...X..........X...............XXX........X........XX...X..X.XX.X..X.X....X.X.......X...X.....X.XX.X.X.X........X.X.X...X.....X.X........X.............X...............X.XX.X........X.X......X..X...X..X.......XX.....X.......X.X.XX.......X.X....X.X.....X..X.....X......X.........X..XX...X.X...XX..X..X....XX...............X..X..X....X..X.....X.X.XX....X.....XXX.......X..XX...X..X.X.............X..X.........X.....X....XX....X.X.......X..XX....X.X.......X.......X..............", :ins_max => 36, :ins_min => 21, :board_x => 62, :board_y => 62 })
       end
 
-      # determine if my path_generator works
-      #def test_for_all_paths
-      #  puts "test_for_all_paths"
-
-      #  puts "setup impossible robot"
-      #  @robot = Robot.new @impossible_config
-      #  paths_retrieved  = []
-      #  next_move = @robot.path_generator
-      #  while true
-      #    got = next_move.call
-      #    puts "got: #{got}"
-      #    break if got.nil?
-      #    paths_retrieved << got
-      #  end
-      #  puts "paths_retrieved: #{paths_retrieved.inspect}"
-      #  assert_equal([['D'],['R']], paths_retrieved)
-      #end
-
       # def test_navigation
       #   # @down_config = @impossible_config.merge({:terrain_string => ".X.X"})
       #   puts "setup down_config"
@@ -172,7 +154,7 @@ class RobotTest < Test::Unit::TestCase
 
         puts "test_possible_puzzles_2"
         assert_nothing_raised { @path = @robot.solve }
-        assert( @path && !@path.empty?)
+        assert( @path.join =~ /^D+$/)
 
         puts "setup possible(m-down) robot"
         @robot = Robot.new @med_down_config
