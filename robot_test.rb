@@ -140,7 +140,8 @@ class RobotTest < Test::Unit::TestCase
 
         puts "test_possible_puzzles_1"
         assert_nothing_raised { @path = @robot.solve }
-        assert( @path && !@path.empty?)
+        #assert( @path && !@path.empty?)
+        assert( @path.join =~ /^R+$/)
 
         puts "setup possible(m-right) robot"
         @robot = Robot.new @med_right_config
