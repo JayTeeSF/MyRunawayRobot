@@ -1,0 +1,2 @@
+http://roguebasin.roguelikedevelopment.org/index.php?title=Talk:Ruby_bitfield
+http://bindata.rubyforge.org/

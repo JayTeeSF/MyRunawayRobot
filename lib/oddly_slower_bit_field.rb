@@ -1,5 +1,5 @@
-require 'rubygems'
-require 'inline'
+#require 'rubygems'
+#require 'inline'
 class BitField
   include Enumerable
   attr_reader :size
@@ -23,17 +23,17 @@ class BitField
   end
 
   def [](position)
-    #@field[position]
-    getbit(@field,position)
+    @field[position]
+    #getbit(@field,position)
   end
 
-  inline(:C) do |builder|
-    builder.c "int getbit(char *z, int position) {
-      if (z[position/8] & (1<<(position%8)))
-        return 1;
-      return 0;
-    }"
-  end
+#  inline(:C) do |builder|
+#    builder.c "int getbit(char *z, int position) {
+#      if (z[position/8] & (1<<(position%8)))
+#        return 1;
+#      return 0;
+#    }"
+#  end
 
 
   def is_set?(position)
