@@ -106,48 +106,76 @@ class Robot
     #   return false     
     # end
 
+    def direction(idx)
+      (0 == idx) ? Robot.down() : Robot.right()
+    end
+
     def solve_from(current_path=[], row=0, col=0)
-      # puts "called with: p:#{current_path}; r#{row}/c#{col}"
+      move_hist = []
+      # direction_history = BitField.new(map.max_cycle * 2)
+      dir_history = []
+      dir_idx = 0
       path_size = current_path.size
-      if path_size > @max
-        # need to force code to undo last move...
-        return false
-      elsif path_size >= @min 
-        if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
-puts "Found it (#{current_path.inspect})!"
-          @path = current_path
-          return @path
+      min_size = @min - 1
+      while true
+        # puts "cp:#{current_path}; r#{row}/c#{col}"
+        if path_size > min_size
+          # if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
+          if path_size > @max # backup; we've gone too far
+            dir_idx, dir_history, current_path, move_hist, row, col = backup(dir_history, current_path, move_hist, row, col) 
+            path_size = current_path.size
+            return false if 0 == path_size
+            dir_idx = 1; # puts "^" # try a different direction
+          elsif map.verify_moves(move_hist, row, col)
+            # puts "Found it (#{current_path.inspect})!"
+            @path = current_path
+            return @path
+          end
         end
-      end
 
-# puts "d: r#{row}/c#{col}"
-      move = Map.move(Robot.down(),row,col)      
-      if map.avail?(*move)
-        current_path << Robot.down()
-        solution = solve_from(current_path,*move)
-        if solution
-          return solution
+        # puts "#{direction(dir_idx)}: r#{row}/c#{col}"
+        move = Map.move(direction(dir_idx),row,col) # this could be down/right!!!
+        avail = map.avail?(*move)
+        
+        if ! avail && 0 == dir_idx
+          dir_idx = 1; # puts "^" # try opposite direction
+          move = Map.move_right(row,col) # this _is_ right!!!
+          avail = map.avail?(*move)
+        end
+        
+        if avail
+          # puts "."
+          dir_history << dir_idx
+          current_path << direction(dir_idx)
+          move_hist << move
+          path_size += 1
+          row, col = move
+          dir_idx = 0
         else
-          current_path.pop
+          # backup; we've already tried both directions
+          dir_idx, dir_history, current_path, move_hist, row, col = backup(dir_history, current_path, move_hist, row, col)
+          path_size = current_path.size
+          return false if 0 == path_size
+          dir_idx = 1; # puts "^" # try different direction
         end
-      end
 
-# puts "r: r#{row}/c#{col}"
-      move = Map.move(Robot.right(),row,col)
-      if map.avail?(*move)
-        current_path << Robot.right()
-        solution = solve_from(current_path,*move)
-        if solution
-          return solution
-        else
-          current_path.pop
-        end
-      end
-
-# puts "<--"
-      return false
+      end # end while loop
     end
     alias :solve :solve_from
+
+    def backup(dir_history, current_path, move_hist, row, col)
+      begin
+        dir_idx = dir_history.pop
+        # print "-"
+        current_path.pop
+        row, col = move_hist.pop
+        #row, col = Map.reverse_move(direction(dir_idx),row,col)
+      end while 1 == dir_idx # keep shortening... till we find take a turn we haven't tried
+      # puts ""
+      
+      [dir_idx, dir_history, current_path, move_hist, row, col]
+    end
+
 
     #
     # a string version of the current path-array

@@ -149,28 +149,41 @@ class RobotTest < Test::Unit::TestCase
         puts "got: #{@path}"
       end
 
-      # prove that we can solve the simplest of puzzles
-      def test_possible
-        puts "test_possible_puzzles"
-
+      def test_possible_right
         puts "setup possible(right) robot"
         @robot = Robot.new @right_config
 
-        puts "test_possible_puzzles_1"
+        puts "test_possible_puzzles_right"
         assert_nothing_raised { @path = @robot.solve }
-        assert( @path && !@path.empty?)
+        assert( @path.join =~ /^R+$/)
+      end
+
+      def test_possible_down
+        puts "setup possible(down) robot"
+        @robot = Robot.new @down_config
+
+        puts "test_possible_puzzles_down"
+        assert_nothing_raised { @path = @robot.solve }
+        assert( @path.join =~ /^D+$/)
+      end
+
+      def test_possible_mix
+        puts "setup possible(m-mix) robot"
+        @robot = Robot.new @med_mix_config
+        @robot.map.draw_matrix
+        puts "test_possible_puzzles_mix"
+        assert_nothing_raised { @path = @robot.solve }
+        assert( @path.join =~ /^[DR]+$/)
+      end
+
+      # prove that we can solve the simplest of puzzles
+      def test_possible
+        puts "test_possible_puzzles"
 
         puts "setup possible(m-right) robot"
         @robot = Robot.new @med_right_config
 
         puts "test_possible_puzzles_1b"
-        assert_nothing_raised { @path = @robot.solve }
-        assert( @path && !@path.empty?)
-
-        puts "setup possible(down) robot"
-        @robot = Robot.new @down_config
-
-        puts "test_possible_puzzles_2"
         assert_nothing_raised { @path = @robot.solve }
         assert( @path && !@path.empty?)
 
@@ -180,14 +193,8 @@ class RobotTest < Test::Unit::TestCase
         puts "test_possible_puzzles_2b"
         assert_nothing_raised { @path = @robot.solve }
         assert( @path && !@path.empty?)
-
-        puts "setup possible(m-mix) robot"
-        @robot = Robot.new @med_mix_config
-        puts "test_possible_puzzles_3"
-        assert_nothing_raised { @path = @robot.solve }
-        assert( @path && !@path.empty?)
       end
-
+        
       # xxx
       def test_super_hard
         puts "setup possible(hmm-super_hard) robot"

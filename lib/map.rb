@@ -25,6 +25,8 @@ class Map
     @terrain = options[:terrain_string]
     @width = options[:board_x] - 1
     @height = options[:board_y] - 1
+    @row_success = @height + 1
+    @col_success = @width + 1
     @max_cycle = options[:ins_max]
     #@known_bad_cycles = []
     #bad_cycle_len = nil
@@ -80,7 +82,7 @@ class Map
 
     (0..@height).each do |y_val|
       final_row_bomb = nil
-      prev_row_bomb = row_bomb[y_val -1] ||= @width + 1
+      prev_row_bomb = row_bomb[y_val -1] ||= @col_success
       matrix_row = []
       (0 .. @width).each do |x_val|
         ascii_char = next_cell.call
@@ -106,7 +108,7 @@ class Map
     col_bomb = {-1 => 0}
     (0 .. @width).each do |x_val|
       final_col_bomb = nil
-      prev_col_bomb = col_bomb[x_val -1] ||= @height + 1
+      prev_col_bomb = col_bomb[x_val -1] ||= @row_success
       (0 .. @height).each do |y_val|
         ascii_char = @matrix[y_val][x_val]
         if final_col_bomb
@@ -180,7 +182,7 @@ class Map
   end
 
   def immediate_success(row,col)
-    1 + @height == row || 1 + @width == col
+    @row_success == row || @col_success == col
   end
 
   def success(row,col)
@@ -207,20 +209,42 @@ class Map
     move direction, row, col, -1, -1
   end
 
+  def self.move_up(row, col)
+    row -= 1
+    [row, col]
+  end
+
+  def self.move_down(row, col)
+    row += 1
+    [row, col]
+  end
+
+  def self.move_left(row, col)
+    col -= 1
+    [row, col]
+  end
+
+  def self.move_right(row, col)
+    col += 1
+    [row, col]
+  end
+
   def self.move(direction, row, col, amount_down=1, amount_right=1)
     (direction == Robot.down) ? row += amount_down : col += amount_right
     [row,col]
   end
 
   def avail?(row,col)
-    immediate_success(row,col) || safe?(row,col)
+    # immediate_success(row,col) || safe?(row,col)
+    #! unavail?(row,col)
+    @matrix[row][col] != Map.bomb
   end
   
-  def unavail?(row,col)
-    @matrix[row][col] == Map.bomb
-  rescue Exception => e
-    return true
-  end
+  #def unavail?(row,col)
+  #  @matrix[row][col] == Map.bomb
+  #rescue Exception => e
+  #  return false
+  #end
 
   # # append path to path, just checking the end-pts
   # def repeat_verify(num_down, num_right, row, col)
@@ -249,6 +273,8 @@ class Map
         # return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
+      return true if success(row,col)
+      
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
@@ -256,6 +282,18 @@ class Map
 
     puts "dropping through..."
   rescue Exception => e
+    return true
+  end
+
+  def verify_moves(moves=[], row=0, col=0)
+    while true # begin
+      moves.each do |move|
+        return false if fail(*move)
+      end # end-each
+      return true if success(*move)
+    end # while true
+
+  rescue Exception => e    
     return true
   end
 
@@ -267,6 +305,8 @@ class Map
         # return true if immediate_success(row,col)
         return false if fail(row,col)
       end # end-each
+      return true if success(row,col)
+      
       # not sure why, but this early-return is WORKING; and FAST
       # return true
       # return repeat_verify(path_down, path_across, row, col)
