@@ -23,6 +23,7 @@ class Robot
       @start_y = 0
       @cache_off = options[:cache_off]
       @min = options[:ins_min]
+      @min_size = @min - 1
       @max = options[:ins_max]
       clear_path
 
@@ -116,10 +117,9 @@ class Robot
       dir_history = []
       dir_idx = 0
       path_size = current_path.size
-      min_size = @min - 1
       while true
         # puts "cp:#{current_path}; r#{row}/c#{col}"
-        if path_size > min_size
+        if path_size > @min_size
           if path_size > @max # backup; we've gone too far
             dir_idx, dir_history, current_path, move_hist = backup(dir_history, current_path, move_hist) #, row, col) 
             row, col = move_hist.last
@@ -181,15 +181,27 @@ class Robot
 def solve_recursive(current_path=[], row=0, col=0)
       # puts "called with: p:#{current_path}; r#{row}/c#{col}"
       path_size = current_path.size
-      if path_size > @max
-        # need to force code to undo last move...
-        return false
-      elsif path_size >= @min 
-        if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
-puts "Found it (#{current_path.inspect})!"
+
+      #if path_size > @max
+      #  # need to force code to undo last move...
+      #  return false
+      #elsif path_size >= @min 
+      #  if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
+#puts "#Found it (#{current_path.inspect})!"
+      #    @path = current_path
+      #    return @path
+      #  end
+      #end
+      if path_size > @min_size
+        if path_size > @max
+          return false
+        elsif map.verify(current_path, row, col)
+          puts "Found it (#{current_path.inspect})!"
           @path = current_path
           return @path
         end
+      #elsif path_size == @min_size
+      #  # don't repeat the pattern!
       end
 
 # puts "d: r#{row}/c#{col}"

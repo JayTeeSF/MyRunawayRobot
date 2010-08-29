@@ -1,3 +1,43 @@
+what's so different about these:
+105...
+Found it (["R", "R", "D", "D", "D", "R", "D", "D", "D", "R", "D", "R", "D", "R", "R", "R", "D", "D", "D", "R", "R", "R", "D", "D", "R", "D", "R"])!
+actually took 297.988678 seconds.
+constructing matrix...
+vs.
+starting level 111...
+Found it (["R", "R", "D", "D", "R", "D", "D", "D", "D", "R", "D", "R", "D", "R", "R", "D", "D", "D", "D", "D", "D", "R", "R", "R", "R", "D"])!
+actually took 29.144208 seconds.
+constructing matrix...
+
+it can't simply be length (26 vs. 27; it's not simply that one starts w/ R's...)
+checkout these two levels (the short one(32) took longer than the long one (28)):
+starting level 116...
+Found it (["D", "R", "R", "D", "R", "D", "R", "R", "D", "R", "D", "D", "D", "D", "D", "R", "D", "D", "D", "R", "D", "D", "D", "R", "D", "R", "D", "R", "R", "D", "D", "D"])!
+actually took 26.642033 seconds.
+
+vs.
+starting level 117...
+Found it (["D", "D", "D", "R", "R", "R", "D", "R", "D", "R", "R", "D", "R", "D", "R", "R", "D", "R", "D", "R", "D", "D", "R", "R", "D", "R", "R", "R"])!
+actually took 220.692427 seconds.
+constructing matrix...
+
+===
+starting level 119...
+Found it (["R", "D", "D", "D", "D", "R", "R", "R", "R", "D", "D", "R", "R", "R", "D", "R", "D", "R", "D", "R", "R", "R", "D", "D", "R", "D", "R", "D", "R", "D", "D", "D"])!
+actually took 32.251518 seconds.
+
+
+starting level 120...
+Found it (["R", "R", "R", "R", "D", "D", "R", "R", "D", "D", "D", "D", "R", "D", "R", "R", "D", "D", "R", "R", "D", "D", "R", "D", "R", "D", "D", "R"])!
+actually took 1398.355074 seconds.
+
+
+starting level 121...
+Found it (["D", "R", "R", "D", "D", "D", "R", "D", "R", "R", "D", "D", "D", "R", "R", "R", "R", "D", "D", "R", "R", "D", "D", "R", "R", "D", "D", "R", "R", "D", "R", "D", "R"])!
+actually took 296.272293 seconds.
+---
+ 
+
  91         [48,48]   (17..29)     p> DDDRDDDDRRDRRDDDRRRDDDDDDDRRR<  172.419
  # first slow-down:
  92         [49,49]   (17..29)     p>          DDRRDDRDDRRDDDDRRRRD<  233.332
