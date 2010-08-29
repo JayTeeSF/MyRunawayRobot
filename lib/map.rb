@@ -1,3 +1,4 @@
+require './lib/nil_extensions.rb'
 class Map
   # BAD_CYCLE_LEN = 5
   @@solutions = './solutions.txt'
@@ -285,18 +286,6 @@ class Map
     return true
   end
 
-  def verify_moves(moves=[], row=0, col=0)
-    while true # begin
-      moves.each do |move|
-        return false if fail(*move)
-      end # end-each
-      return true if success(*move)
-    end # while true
-
-  rescue Exception => e    
-    return true
-  end
-
   def verify(path_ary=[], row=0, col=0)
     # path_down, path_across = *[row, col]
     while true # begin
@@ -311,9 +300,6 @@ class Map
       # return true
       # return repeat_verify(path_down, path_across, row, col)
     end # while true
-
-  rescue Exception => e    
-    return true
   end
 
   def self.success

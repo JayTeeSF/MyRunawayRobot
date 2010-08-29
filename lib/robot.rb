@@ -110,7 +110,7 @@ class Robot
       (0 == idx) ? Robot.down() : Robot.right()
     end
 
-    def solve_from(current_path=[], row=0, col=0)
+    def solve_non_recursive(current_path=[], row=0, col=0)
       move_hist = []
       # direction_history = BitField.new(map.max_cycle * 2)
       dir_history = []
@@ -120,14 +120,14 @@ class Robot
       while true
         # puts "cp:#{current_path}; r#{row}/c#{col}"
         if path_size > min_size
-          # if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
           if path_size > @max # backup; we've gone too far
-            dir_idx, dir_history, current_path, move_hist, row, col = backup(dir_history, current_path, move_hist, row, col) 
+            dir_idx, dir_history, current_path, move_hist = backup(dir_history, current_path, move_hist) #, row, col) 
+            row, col = move_hist.last
             path_size = current_path.size
             return false if 0 == path_size
             dir_idx = 1; # puts "^" # try a different direction
-          elsif map.verify_moves(move_hist, row, col)
-            # puts "Found it (#{current_path.inspect})!"
+          elsif map.verify(current_path, row, col)
+            puts "Found it (#{current_path.inspect})!"
             @path = current_path
             return @path
           end
@@ -153,7 +153,8 @@ class Robot
           dir_idx = 0
         else
           # backup; we've already tried both directions
-          dir_idx, dir_history, current_path, move_hist, row, col = backup(dir_history, current_path, move_hist, row, col)
+          dir_idx, dir_history, current_path, move_hist = backup(dir_history, current_path, move_hist) #, row, col)
+          row, col = move_hist.last
           path_size = current_path.size
           return false if 0 == path_size
           dir_idx = 1; # puts "^" # try different direction
@@ -161,21 +162,64 @@ class Robot
 
       end # end while loop
     end
-    alias :solve :solve_from
+    #alias :solve :solve_non_recursive
 
-    def backup(dir_history, current_path, move_hist, row, col)
+    def backup(dir_history, current_path, move_hist) #, row, col)
       begin
         dir_idx = dir_history.pop
         # print "-"
         current_path.pop
-        row, col = move_hist.pop
-        #row, col = Map.reverse_move(direction(dir_idx),row,col)
+        #row, col = move_hist.pop
+        move_hist.pop
+        # row, col = Map.reverse_move(direction(dir_idx),row,col)
       end while 1 == dir_idx # keep shortening... till we find take a turn we haven't tried
       # puts ""
       
-      [dir_idx, dir_history, current_path, move_hist, row, col]
+      [dir_idx, dir_history, current_path, move_hist] #, row, col]
     end
 
+def solve_recursive(current_path=[], row=0, col=0)
+      # puts "called with: p:#{current_path}; r#{row}/c#{col}"
+      path_size = current_path.size
+      if path_size > @max
+        # need to force code to undo last move...
+        return false
+      elsif path_size >= @min 
+        if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
+puts "Found it (#{current_path.inspect})!"
+          @path = current_path
+          return @path
+        end
+      end
+
+# puts "d: r#{row}/c#{col}"
+      move = Map.move(Robot.down(),row,col)      
+      if map.avail?(*move)
+        current_path << Robot.down()
+        solution = solve_recursive(current_path,*move)
+        if solution
+          return solution
+        else
+          current_path.pop
+        end
+      end
+
+# puts "r: r#{row}/c#{col}"
+      move = Map.move(Robot.right(),row,col)
+      if map.avail?(*move)
+        current_path << Robot.right()
+        solution = solve_recursive(current_path,*move)
+        if solution
+          return solution
+        else
+          current_path.pop
+        end
+      end
+
+# puts "<--"
+      return false
+    end
+ alias :solve :solve_recursive
 
     #
     # a string version of the current path-array
