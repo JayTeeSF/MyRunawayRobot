@@ -36,6 +36,14 @@ class RobotRerun < Test::Unit::TestCase
     return config # apparently return(s) must be explicit from an ensure block...
   end
 
+  def test_107
+    try 107
+  end
+
+  def test_105
+    try 105
+  end
+
   def test_all_levels
     @config.keys.sort.each do |level|
       try level

@@ -28,24 +28,23 @@ class Robot
       clear_path
 
       @map.config(options)
-      half = mid(@min,@max)
-      three_fourths = mid(half, @max)
-      a_bit = three_fourths - mid(half,three_fourths) -1  # maybe subtract 1 ?!
-      board_mid = ([@map.width, @map.height].max / 2)
+      #board_mid = ([@map.width, @map.height].max / 2)
 
-      #@path_min = @max > 40 ? (mid - a_bit) - 1 : @min_size
-      @path_min = @max > 32 ? (@min + a_bit) : @min_size
+#      @path_min = @max > 32 ? (mid - a_bit) - 1 : @min_size
+      #@path_min = @max > 32 ? (@min + a_bit) : @min_size
 
-      board_mid_or_min = [board_mid, @path_min].max # probably overkill
-      @path_max = @max > 32 ? [(mid + a_bit), board_mid_or_min].min : @max
+      #board_mid_or_min = [board_mid, @path_min].max # probably overkill
+#     @path_max = @max > 32 ? mid + a_bit : @max; #too complex: [(mid + a_bit), board_mid_or_min].min : @max
+      
 
-      raise "Ooops" if @path_min > @path_max
+
+      #raise "Ooops" if @path_min > @path_max
 
       @map.draw_matrix(@start_x, @start_y)
       solve() if options[:only_config].nil?
     end
 
-    def mid(a_min=@min,a_max=@max)
+    def mid(a_min=@min_size,a_max=@max)
       diff = a_max - a_min
       a_min + (diff / 2)
     end
@@ -195,61 +194,111 @@ class Robot
       [dir_idx, dir_history, current_path, move_hist] #, row, col]
     end
 
-def solve_recursive(current_path=[], row=0, col=0)
-      # puts "called with: p:#{current_path}; r#{row}/c#{col}"
-      path_size = current_path.size
+  def solve_recursive(current_path=[], row=0, col=0)
+    # puts "called with: p:#{current_path}; r#{row}/c#{col}"
+    path_size = current_path.size
 
-      #if path_size > @max
-      #  # need to force code to undo last move...
-      #  return false
-      #elsif path_size >= @min 
-      #  if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
-#puts "#Found it (#{current_path.inspect})!"
-      #    @path = current_path
-      #    return @path
-      #  end
-      #end
-      if path_size > @path_min #@min_size
-        if path_size > @path_max # @max
-          return false
-        elsif map.verify(current_path, row, col)
-          puts "Found it (#{current_path.inspect})!"
-          @path = current_path
-          return @path
-        end
-      #elsif path_size == @min_size
-      #  # don't repeat the pattern!
+    if path_size > @path_min #@min_size
+      if path_size > @path_max # @max
+        return false
+      elsif map.verify(current_path, row, col)
+        puts "Found it (#{current_path.inspect})!"
+        @path = current_path
+        return @path
       end
+    end
 
 # puts "d: r#{row}/c#{col}"
-      move = Map.move(Robot.down(),row,col)      
-      if map.avail?(*move)
-        current_path << Robot.down()
-        solution = solve_recursive(current_path,*move)
-        if solution
-          return solution
-        else
-          current_path.pop
-        end
+    move = Map.move(Robot.down(),row,col)      
+    if map.avail?(*move)
+      current_path << Robot.down()
+      solution = solve_recursive(current_path,*move)
+      if solution
+        return solution
+      else
+        current_path.pop
       end
+    end
 
 # puts "r: r#{row}/c#{col}"
-      move = Map.move(Robot.right(),row,col)
-      if map.avail?(*move)
-        current_path << Robot.right()
-        solution = solve_recursive(current_path,*move)
-        if solution
-          return solution
-        else
-          current_path.pop
-        end
+    move = Map.move(Robot.right(),row,col)
+    if map.avail?(*move)
+      current_path << Robot.right()
+      solution = solve_recursive(current_path,*move)
+      if solution
+        return solution
+      else
+        current_path.pop
       end
+    end
 
 # puts "<--"
-      return false
-    end
- alias :solve :solve_recursive
+    return false
+  end
 
+  def config(size=:small)
+    puts "trying #{size}..."
+    case size
+    when :small
+      @path_min = @min_size
+      @path_max =  (mid - a_bit)
+    when :med
+      @path_min = (mid - a_bit) - 1
+      @path_max = mid + a_bit
+    when :large
+      @path_min = (mid + a_bit) - 1
+      @path_max = three_fourths
+    when :xlarge
+      @path_min = three_fourths - 1
+      @path_max = @max
+    end
+  end
+
+  def half
+    @half ||= mid(@min_size,@max)
+  end
+
+  def three_fourths
+    @three_fourths ||= mid(half, @max)
+  end
+
+  def a_bit
+    @a_bit ||= three_fourths - mid(half,three_fourths)
+  end
+
+  def solve
+    sizes = [:small, :med, :large, :xlarge]
+    if @map.width < 32
+      sizes = [:small, :med, :large, :xlarge]
+    elsif @map.width > 32
+      sizes = [:med, :small, :large, :xlarge]
+    elsif @map.width > 64
+      sizes = [:med, :large, :small, :xlarge]
+    end
+    puts "trying sizes: #{sizes.inspect}"
+    ### short
+    config(sizes[0])
+    result = solve_recursive(current_path=[], row=0, col=0)
+
+    unless result ### med
+      config(sizes[1])
+      result = solve_recursive(current_path=[], row=0, col=0)
+
+      unless result ### large
+        config(sizes[2])
+        result = solve_recursive(current_path=[], row=0, col=0)
+
+        unless result ### x-large
+          config(sizes[3])
+          result = solve_recursive(current_path=[], row=0, col=0)
+        end
+
+      end
+
+    end
+
+    return result
+  end
     #
     # a string version of the current path-array
     #

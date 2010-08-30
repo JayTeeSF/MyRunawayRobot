@@ -107,7 +107,7 @@ while true
         "(#{@params[:ins_min]}..#{@params[:ins_max]})".center(15) + " p>" +
         path.rjust(30) + "<  " + (end_time - start_time).to_s
   puts report
-  if (path && path.size > 0)
+  unless (path || path.size > 0)
     puts "no path...; get a fresh board"
     counter += 1
   end
