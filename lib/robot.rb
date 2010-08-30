@@ -28,9 +28,19 @@ class Robot
       clear_path
 
       @map.config(options)
+      half = mid(@min,@max)
+      three_fourths = mid(half, @max)
+      a_bit = three_fourths - mid(half,three_fourths) 
+      @path_max = @max > 50 ? mid + a_bit : @max
+      @path_min = @max > 50 ? (@min + a_bit) - 1 : @min_size
 
       #@map.draw_matrix(@start_x, @start_y)
       solve() if options[:only_config].nil?
+    end
+
+    def mid(a_min=@min,a_max=@max)
+      diff = a_max - a_min
+      a_min + (diff / 2)
     end
 
     def initialize(params={})
@@ -192,8 +202,8 @@ def solve_recursive(current_path=[], row=0, col=0)
       #    return @path
       #  end
       #end
-      if path_size > @min_size
-        if path_size > @max
+      if path_size > @path_min #@min_size
+        if path_size > @path_max # @max
           return false
         elsif map.verify(current_path, row, col)
           puts "Found it (#{current_path.inspect})!"
