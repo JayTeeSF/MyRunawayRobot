@@ -23,13 +23,31 @@ class Robot
       @start_y = 0
       @cache_off = options[:cache_off]
       @min = options[:ins_min]
+      @min_size = @min - 1
       @max = options[:ins_max]
       clear_path
 
       @map.config(options)
+      half = mid(@min,@max)
+      three_fourths = mid(half, @max)
+      a_bit = three_fourths - mid(half,three_fourths) -1  # maybe subtract 1 ?!
+      board_mid = ([@map.width, @map.height].max / 2)
 
-      #@map.draw_matrix(@start_x, @start_y)
+      #@path_min = @max > 40 ? (mid - a_bit) - 1 : @min_size
+      @path_min = @max > 32 ? (@min + a_bit) : @min_size
+
+      board_mid_or_min = [board_mid, @path_min].max # probably overkill
+      @path_max = @max > 32 ? [(mid + a_bit), board_mid_or_min].min : @max
+
+      raise "Ooops" if @path_min > @path_max
+
+      @map.draw_matrix(@start_x, @start_y)
       solve() if options[:only_config].nil?
+    end
+
+    def mid(a_min=@min,a_max=@max)
+      diff = a_max - a_min
+      a_min + (diff / 2)
     end
 
     def initialize(params={})
@@ -110,19 +128,15 @@ class Robot
       (0 == idx) ? Robot.down() : Robot.right()
     end
 
-    #def solve_from(current_path=[], row=0, col=0)
-    def solve
-      current_path = []
-      row = col = 0
+    def solve_non_recursive(current_path=[], row=0, col=0)
       move_hist = []
       # direction_history = BitField.new(map.max_cycle * 2)
       dir_history = []
       dir_idx = 0
       path_size = current_path.size
-      min_size = @min - 1
       while true
         # puts "cp:#{current_path}; r#{row}/c#{col}"
-        if path_size > min_size
+        if path_size > @min_size
           if path_size > @max # backup; we've gone too far
             dir_idx, dir_history, current_path, move_hist = backup(dir_history, current_path, move_hist) #, row, col) 
             row, col = move_hist.last
@@ -165,7 +179,7 @@ class Robot
 
       end # end while loop
     end
-    #alias :solve :solve_from
+    #alias :solve :solve_non_recursive
 
     def backup(dir_history, current_path, move_hist) #, row, col)
       begin
@@ -181,6 +195,60 @@ class Robot
       [dir_idx, dir_history, current_path, move_hist] #, row, col]
     end
 
+def solve_recursive(current_path=[], row=0, col=0)
+      # puts "called with: p:#{current_path}; r#{row}/c#{col}"
+      path_size = current_path.size
+
+      #if path_size > @max
+      #  # need to force code to undo last move...
+      #  return false
+      #elsif path_size >= @min 
+      #  if (map.debug) ? map.debug_verify(current_path, row, col) : map.verify(current_path, row, col)
+#puts "#Found it (#{current_path.inspect})!"
+      #    @path = current_path
+      #    return @path
+      #  end
+      #end
+      if path_size > @path_min #@min_size
+        if path_size > @path_max # @max
+          return false
+        elsif map.verify(current_path, row, col)
+          puts "Found it (#{current_path.inspect})!"
+          @path = current_path
+          return @path
+        end
+      #elsif path_size == @min_size
+      #  # don't repeat the pattern!
+      end
+
+# puts "d: r#{row}/c#{col}"
+      move = Map.move(Robot.down(),row,col)      
+      if map.avail?(*move)
+        current_path << Robot.down()
+        solution = solve_recursive(current_path,*move)
+        if solution
+          return solution
+        else
+          current_path.pop
+        end
+      end
+
+# puts "r: r#{row}/c#{col}"
+      move = Map.move(Robot.right(),row,col)
+      if map.avail?(*move)
+        current_path << Robot.right()
+        solution = solve_recursive(current_path,*move)
+        if solution
+          return solution
+        else
+          current_path.pop
+        end
+      end
+
+# puts "<--"
+      return false
+    end
+ alias :solve :solve_recursive
 
     #
     # a string version of the current path-array
