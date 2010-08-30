@@ -30,11 +30,18 @@ class Robot
       @map.config(options)
       half = mid(@min,@max)
       three_fourths = mid(half, @max)
-      a_bit = three_fourths - mid(half,three_fourths) 
-      @path_max = @max > 50 ? mid + a_bit : @max
-      @path_min = @max > 50 ? (@min + a_bit) - 1 : @min_size
+      a_bit = three_fourths - mid(half,three_fourths) -1  # maybe subtract 1 ?!
+      board_mid = ([@map.width, @map.height].max / 2)
 
-      #@map.draw_matrix(@start_x, @start_y)
+      #@path_min = @max > 40 ? (mid - a_bit) - 1 : @min_size
+      @path_min = @max > 32 ? (@min + a_bit) : @min_size
+
+      board_mid_or_min = [board_mid, @path_min].max # probably overkill
+      @path_max = @max > 32 ? [(mid + a_bit), board_mid_or_min].min : @max
+
+      raise "Ooops" if @path_min > @path_max
+
+      @map.draw_matrix(@start_x, @start_y)
       solve() if options[:only_config].nil?
     end
 
