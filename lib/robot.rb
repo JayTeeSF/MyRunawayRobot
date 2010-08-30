@@ -250,6 +250,9 @@ class Robot
       @path_max = three_fourths
     when :xlarge
       @path_min = three_fourths - 1
+      @path_max = three_fourths + a_bit
+    when :xxlarge
+      @path_min = three_fourths + a_bit - 1
       @path_max = @max
     end
   end
@@ -267,34 +270,22 @@ class Robot
   end
 
   def solve
-    sizes = [:small, :med, :large, :xlarge]
-    if @map.width < 32
-      sizes = [:small, :med, :large, :xlarge]
-    elsif @map.width > 32
-      sizes = [:med, :small, :large, :xlarge]
-    elsif @map.width > 64
-      sizes = [:med, :large, :small, :xlarge]
-    end
+    sizes = [ :large, :med, :xlarge, :small, :xxlarge ]
+
+    #sizes = [ :small, :xlarge, :large, :med ]
+    #if @map.width < 32
+    #  sizes = [:small, :med, :large, :xlarge]
+    #elsif @map.width > 32
+    #  sizes = [:med, :small, :large, :xlarge]
+    #elsif @map.width > 64
+    #  sizes = [:med, :large, :small, :xlarge]
+    #end
     puts "trying sizes: #{sizes.inspect}"
-    ### short
-    config(sizes[0])
-    result = solve_recursive(current_path=[], row=0, col=0)
 
-    unless result ### med
-      config(sizes[1])
+    result = false
+    while ! result && sizes.size
+      config(sizes.shift)
       result = solve_recursive(current_path=[], row=0, col=0)
-
-      unless result ### large
-        config(sizes[2])
-        result = solve_recursive(current_path=[], row=0, col=0)
-
-        unless result ### x-large
-          config(sizes[3])
-          result = solve_recursive(current_path=[], row=0, col=0)
-        end
-
-      end
-
     end
 
     return result
