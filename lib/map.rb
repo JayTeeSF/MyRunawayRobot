@@ -29,6 +29,8 @@ class Map
     @row_success = @height + 1
     @col_success = @width + 1
     @max_cycle = options[:ins_max]
+    
+    # @bomb_hash = {}
     #@known_bad_cycles = []
     #bad_cycle_len = nil
 
@@ -94,6 +96,10 @@ class Map
             row_bomb[y_val] = final_row_bomb = x_val
           end
         end
+        
+        # if ascii_char == Map.bomb
+        #   @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
+        # end
 
         matrix_row << ascii_char
       end # end-width
@@ -115,6 +121,9 @@ class Map
         if final_col_bomb
           # puts "COL: xxx"
           @matrix[y_val][x_val] = Map.bomb
+          
+          # @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
+          
         else
 
           if y_val >= (prev_col_bomb - 1) && Map.bomb == ascii_char
@@ -136,6 +145,7 @@ class Map
     # puts "matrix[0].class = #{@matrix[0].class}"
   end
 
+
   def stringify_rows matrix
     (0..(matrix.size-1)).each do |y_val|
       matrix[y_val] = matrix[y_val].join
@@ -153,6 +163,10 @@ class Map
           if fail( *Map.reverse_move(Robot.down, y_val,x_val) ) && fail( *Map.reverse_move(Robot.right, y_val,x_val) )
             # puts "filling-in a dead-end"
             @matrix[y_val][x_val] = Map.bomb
+            
+              # @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
+            
+            
           end
         end
       end
@@ -164,6 +178,9 @@ class Map
           if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
             # puts "filling-in a dead-end"
             @matrix[y_val][x_val] = Map.bomb
+            
+            # @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
+            
           end
         end
       end
@@ -192,6 +209,7 @@ class Map
 
   #def array_fail(row,col)
   def fail(row,col)
+    # @bomb_hash["#{row}_#{col}"] == Map.bomb
     @matrix[row][col] == Map.bomb
   end
 
@@ -239,6 +257,8 @@ class Map
     # immediate_success(row,col) || safe?(row,col)
     #! unavail?(row,col)
     @matrix[row][col] != Map.bomb
+    # @bomb_hash["#{row}_#{col}"] != Map.bomb
+    
   end
   
   #def unavail?(row,col)
@@ -286,20 +306,30 @@ class Map
     return true
   end
 
+  # def non_recursive_verify(path_ary=[], row=0, col=0)
   def verify(path_ary=[], row=0, col=0)
     # path_down, path_across = *[row, col]
+    # reverse = path_ary.count(Robot.down) < path_ary.count(Robot.right)
+    # success_check =  (ds > rs) ? lambda {|row| row > @height} : lambda {|col| col > @width}
+
     while true # begin
+      # path_ary.size.times do # is this useful ?so far no!?
       path_ary.each do |direction|
-        row, col = *Map.move(direction, row, col)
-        # return true if immediate_success(row,col)
+        row, col = Map.move(direction, row, col)
         return false if fail(row,col)
       end # end-each
-      return true if success(row,col)
-      
-      # not sure why, but this early-return is WORKING; and FAST
-      # return true
-      # return repeat_verify(path_down, path_across, row, col)
+      # end
+      return true if success(row,col) # faster to do this single check than multiple checks
     end # while true
+  end
+
+  def recursive_verify(path_ary=[], row=0, col=0)
+    path_ary.each do |direction|
+      row, col = Map.move(direction, row, col)
+      return false if fail(row,col)
+    end # end-each
+    return true if success(row,col) # faster to do this single check than multiple checks
+    verify(path_ary, row, col)
   end
 
   def self.success
