@@ -1,3 +1,9 @@
+p = %w[R D]; p.permutation.collect {|it| it}
+ => [["R", "D"], ["D", "R"]] 
+
+--
+as of Sept 1; getting bad ranges out of Robot#config
+--
 what's so different about these:
 105...
 Found it (["R", "R", "D", "D", "D", "R", "D", "D", "D", "R", "D", "R", "D", "R", "R", "R", "D", "D", "D", "R", "R", "R", "D", "D", "R", "D", "R"])!

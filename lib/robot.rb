@@ -1,9 +1,9 @@
 require './lib/map.rb' # for 1.9.2
 # require 'lib/map.rb' # for rbx
-require 'thread'  # For Mutex class in Ruby 1.8
+# require 'thread'  # For Mutex class in Ruby 1.8
 
 class Robot
-  attr_accessor :map, :path, :min, :max, :min_size, :start_x, :start_y, :debug
+  attr_accessor :map, :path, :min, :max, :start_x, :start_y, :debug
 
   #
   # this method gives the robots its marching orders
@@ -25,7 +25,6 @@ class Robot
       @start_y = 0
       @cache_off = options[:cache_off]
       @min = options[:ins_min]
-      @min_size = @min - 1
       @max = options[:ins_max]
       clear_path
 
@@ -41,8 +40,8 @@ class Robot
     def initialize(params={})
       @map = Map.new params
       @debug = params[:debug]
-      @dir_one = nil
-      @dir_two = nil
+      # @dir_one = nil
+      # @dir_two = nil
       params.delete(:debug)
       instruct(params) if params != {}
     end
@@ -154,7 +153,7 @@ class Robot
     end
 
     # can we get rid of move_hist & dir_hist, and just calculate the row, col values, as needed
-    def solve_non_recursive(current_path=[], row=0, col=0, path_min=@min_size,path_max=@max)	    
+    def solve_non_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)	    
       # move_hist, dir_history = extract_moves_and_dirs(current_path, row, col)
       # move_hist = extract_moves(current_path, row, col) #lastest-removed
       # puts "move_hist: #{move_hist.inspect}"
@@ -165,7 +164,7 @@ class Robot
       # puts "dir_idx: #{dir_idx}"
       path_size = current_path.size
       while true
-        # sleep 0.00001
+        sleep 0.001
 
         # puts "cp:#{current_path}; r#{row}/c#{col}"
         if path_size > path_min #@min_size
@@ -251,62 +250,53 @@ class Robot
     #   @dir_one = dir
     # end
 
-    def dir_one
-      # @dir_one ||= 
-      Robot.down()
-    end
+    # def dir_one
+    #   # @dir_one ||= 
+    #   Robot.down()
+    # end
+    # 
+    # def dir_two
+    #   # @dir_two ||= 
+    #   Robot.right()
+    # end
 
-    def dir_two
-      # @dir_two ||= 
-      Robot.right()
-    end
-
-    def solve_recursive(current_path=[], row=0, col=0, path_min=@min_size,path_max=@max)
-      #puts "params: pn: #{path_min}, px: #{path_max}"
-      # puts "d_o = #{dir_one}; d_t: #{dir_two}"
-      # puts "called with: p:#{current_path}; r#{row}/c#{col}"
+    def solve_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)
       path_size = current_path.size
-      # sleep 0.00001
-
       if path_size > path_min #@min_size
         if path_size > path_max # @max
-          # @dt_count += current_path.count(dir_two)
-          # @do_count += current_path.count(dir_one)
-          # @start_path ||= current_path
-          # @start_row ||= row
-          # @start_col ||= col
           return false
         elsif map.verify(current_path, row, col)
           puts "Found it (#{current_path.inspect})!"
-          # @path = current_path
-          # return @path
           return current_path
         end
       end
 
-      # puts "d: r#{row}/c#{col}"
-      move = Map.move(dir_one,row,col)      
+      # puts "d: r*#{row}/c#{col}"
+      move = Map.move(Robot.down(), row, col)      
       if map.avail?(*move)
-        current_path << dir_one
         r, c = *move
-        solution = solve_recursive(current_path,r,c, path_min, path_max)
+        sol_path = current_path.dup
+        sol_path << Robot.down()
+        solution = solve_recursive(sol_path, r, c, path_min, path_max)
         if solution
           return solution
-        else
-          current_path.pop
+        # else
+        #   current_path.pop
         end
+        # puts "sol_path #{sol_path} vs. curr #{current_path}"
       end
 
-      # puts "r: r#{row}/c#{col}"
-      move = Map.move(dir_two,row,col)
+      # puts "r: r#{row}/c*#{col}"
+      move = Map.move(Robot.right(), row, col)
       if map.avail?(*move)
-        current_path << dir_two
         r, c = *move
-        solution = solve_recursive(current_path,r,c, path_min, path_max)
+        sol_path = current_path.dup
+        sol_path << Robot.right()
+        solution = solve_recursive(sol_path, r, c, path_min, path_max)
         if solution
           return solution
-        else
-          current_path.pop
+        # else
+        #   current_path.pop
         end
       end
 
@@ -314,316 +304,307 @@ class Robot
       return false
     end
 
-    # (size)
-      # @path_min ? @path_min += 1 : @path_min = @min_size
-      # @path_max = @path_min + 1
-      #ranges = (@min_size .. (@max - ideal_range)).collect do |i|
-      #  [i, i + ideal_range]
-      #end
-
-#      puts "trying #{size}..."
-#      a_bit = one_bit
-#      a_bit = one_bit > 1 ? one_bit : 1
-#      a_fourth = a_bit * 2 #one_fourth
-#
-#      puts "a_bit: #{a_bit}; a_fourth: #{a_fourth}"
-#      case size
-#      when :xsmall
-#        path_min = @min_size
-#        path_max = @min_size + a_fourth
-#      when :small
-#        path_min = @min_size + a_fourth + 1 #- 1
-#        path_max = mid
-#      when :med
-#        path_min = mid + 1 #- 1
-#        path_max = mid + a_fourth
-#      when :large
-#        path_min = mid + a_fourth + 1
-#        path_max = @max #- 1
-#      end
-
-
-      #   path_max = @max - a_fourth #mid + a_fourth + a_bit #- 1
-      # when :xlarge
-      #   path_min = @max - a_fourth + 1 #mid + a_fourth + a_bit + 1
-
-      # 
-      # case size
-      # when :xxsmall
-      #   @path_min = @min_size
-      #   @path_max =  @min_size + a_bit
-      # when :xsmall
-      #   @path_min = @min_size + a_bit #- 1
-      #   @path_max = @min_size + a_fourth
-      # when :small
-      #   @path_min = @min_size + a_fourth #- 1
-      #   @path_max = @min_size + a_fourth + a_bit
-      # when :medsmall
-      #   @path_min = @min_size + a_fourth + a_bit #- 1
-      #   @path_max = mid
-      # when :med
-      #   @path_min = mid #- 1
-      #   @path_max = mid + a_bit
-      # when :large
-      #   @path_min = mid + a_bit #- 1
-      #   @path_max = mid + a_fourth
-      # when :xlarge
-      #   @path_min = mid + a_fourth
-      #   @path_max = mid + a_fourth + a_bit #- 1
-      # when :xxlarge
-      #   @path_min = mid + a_fourth + a_bit
-      #   @path_max = @max #- 1
-      # end
-
-      # [path_min, path_max]
-
     def solve
-      # sizes = [ :xxsmall, :xsmall, :small, :medsmall, :med, :large, :xlarge, :xxlarge ]
-#      #sm_sizes = [ :xsmall, :med, :small]
-#      #lg_sizes= [:large]
-
-      # need to pre-calculate the sizes...
-#      #sm_size_configs = sm_sizes.collect {|size| x = config(size); puts "#{size} => #{x.inspect}"; x}
-#      #lg_size_configs = lg_sizes.collect {|size| x = config(size); puts "#{size} => #{x.inspect}"; x}
-
-      # sizes = sm_sizes + lg_sizes
-#      all_size_configs = sm_size_configs + lg_size_configs
-      all_size_configs = config()
+      a_min= (@min - 1)
+      a_max=@max
+      ideal_len = calc_ideal_range(a_min,a_max)
+      main_configs = config(a_min, a_max, ideal_len)
       result = false
 
-      # last non-threaded version:
+      # # last non-threaded-single-proc version:
+      # # robot_long_performance.rb: 
+      # # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
       # puts "configs: #{all_size_configs.inspect}"
       # while ((! result) && all_size_configs.size > 0)
-      #   result = solve_recursive(current_path=[], row=0, col=0,*all_size_configs.shift)
+      #   # result = solve_recursive(current_path=[], row=0, col=0,*all_size_configs.shift)
+      #   config_ary = all_size_configs.shift
+      #   puts "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+      #   result = solve_recursive([], 0, 0, *config_ary)
       # end
 
+      # multiprocess may be better (easier)/more scalable: IO.pipe ?!
+      # cmd = "ruby -e '5.times {|i| p i}'"
+      # output = `#{cmd}` # how do we avoid blocking ?!
+      # puts output
+      # 0
+      # 1
+      # 2
+      # 3
+      # 4
+      # 
+      # self.map.matrix = [[1,2,3],[4,5,6],[7,8,9]]
+      # puts self.map.matrix.inspect # => [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 
-# multiprocess may be better (easier)/more scalable: IO.pipe ?!
-# cmd = "ruby -e '5.times {|i| p i}'"
-# output = `#{cmd}` # how do we avoid blocking ?!
-# puts output
-# 0
-# 1
-# 2
-# 3
-# 4
-# 
-# self.map.matrix = [[1,2,3],[4,5,6],[7,8,9]]
-# puts self.map.matrix.inspect # => [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+# perhaps revert back to multi-process (guess best config-sizing):
+# (randomly) choose another size (2/3 ?!) (going in reverse) for use w/ 2nd-thread
 
-### BGN MULTIPROCESS
-if all_size_configs.first == all_size_configs.last
-  all_size_configs = [all_size_configs.first]
-  all_size_configs_reverse = all_size_configs.dup.reverse
-else
-  all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
-end
-proc_hash = {}
-pipes = {} # key1 => [rd, wr], key2 => ...
-
-puts "lg-configs: #{all_size_configs_reverse.inspect}"
-
-# how-to associate rd/wr pipes w/ the different procs?
-# how-to check each child-proc (and not confuse their pipes)
-
-# lg_rd, lg_wr = IO.pipe
-key = :lg_pid
-pipes[key] = IO.pipe
-proc_hash[key] = fork {
-  pipes[key].first.close
-  result = false
-  while ((! result) && (all_size_configs_reverse.size > 0))
-    config = all_size_configs_reverse.shift
-    puts "lg-trying config: #{config.inspect}; #{all_size_configs_reverse.size} left"
-    result = solve_recursive([], 0, 0,*config)          
-  end
-  pipes[key].last.write result ? result : "false"
-  pipes[key].last.close
-  puts "thread large DONE"
-}
-pipes[key].last.close
-
-
-if all_size_configs.size > 1
-
-  key = :sm_pid
-  pipes[key] = IO.pipe
-  final_range_min, final_range_max = *all_size_configs[-1]
-  puts "final_range: #{final_range_min}:#{final_range_max}"
-  final_range_chunks = config(final_range_min, final_range_max,1)
-  
-  puts "final_range_chunks: #{final_range_chunks.inspect}"
-  all_size_configs = all_size_configs[0..-2]
-  all_size_configs << final_range_chunks # [@max - 1, @max]
-  puts "sm-configs: #{all_size_configs.inspect}"
-
-  proc_hash[key] = fork {
-    pipes[key].first.close
-    result = false
-    while ((! result) && (all_size_configs.size > 0))
-      config = all_size_configs.shift
-      puts "sm-trying config: #{config.inspect}; #{all_size_configs.size} left"
-      result = solve_recursive([], 0, 0,*config)         
-
-    end
-    pipes[key].last.write result ? result : "false"
-    pipes[key].last.close
-    puts "thread small DONE"
-  }
-
-  pipes[key].last.close
-  
-end
-
-deleted_pids = []
-
-while ((!result) && (deleted_pids.size < proc_hash.keys.size))
-  proc_hash.each do |key, pid|
-    next if deleted_pids.include?(pid)
-    if Process.waitpid(proc_hash[key], Process::WNOHANG)   #=> nil
-      deleted_pids << pid
+      ### BGN MULTIPROCESS      
+      if main_configs.first == main_configs.last
+        main_configs = [main_configs.first]
+        # all_size_configs_reverse = all_size_configs.dup.reverse
+        secondary_configs = main_configs.dup
+      else
+        # all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
+        secondary_configs = main_configs[1..-1].dup
+      end
+      proc_hash = {}
+      pipes = {} # key1 => [rd, wr], key2 => ...
       
-      # rd.read
-      result = pipes[key].first.read
-      result = (result == "false") ? false : result.split(//)
-
-      puts "result is now: #{result.inspect}"
+      puts "lg-configs: #{main_configs.inspect}"
       
-      # rd.close
-      pipes[key].first.close
+      # how-to associate rd/wr pipes w/ the different procs?
+      # how-to check each child-proc (and not confuse their pipes)
+      
+      # lg_rd, lg_wr = IO.pipe
+      key = :lg_pid
+      pipes[key] = IO.pipe
+      proc_hash[key] = fork {
+        pipes[key].first.close
+        result = false
+        while ((! result) && (main_configs.size > 0))
+          config_ary = main_configs.shift
+          puts "lg-trying config: #{config_ary.inspect}; #{main_configs.size} left"
+          result = solve_recursive([], 0, 0,*config_ary)          
+        end
+        pipes[key].last.write result ? result : "false"
+        pipes[key].last.close
+        puts "thread large DONE"
+      }
+      pipes[key].last.close
+      
+      
+      if main_configs.size > 1
+        # new hack to force 2nd-thread/process to try an alternate "path"
+        a_min = @min - 1
+        a_max = @max
+        puts "ideal via previous hack"
+        ideal_lens = []
+        ideal_lens << 2
+        ideal_lens << 3
+        ideal_lens << previous_three_or_two_to_the_n( diff(a_min,a_max) )
+        ideal_len2 = ideal_len
+        while ideal_len == ideal_len2
+            ideal_len2 = ideal_lens.shift
+        end
+        puts "ideal: #{ideal_len2}"    
+        secondary_configs = config( a_min, a_max, ideal_len2 )
+        tmp = secondary_configs.shuffle
+        secondary_configs = tmp
+        # end new hack
+      
+        key = :sm_pid
+        pipes[key] = IO.pipe
+        # final_range_min, final_range_max = *main_configs[-1]
+        # puts "final_range: #{final_range_min}:#{final_range_max}"
+        # final_range_chunks = config(final_range_min, final_range_max,ideal_len)
+        # 
+        # puts "final_range_chunks: #{final_range_chunks.inspect}"
+        # secondary_configs = secondary_configs[0..-2]
+        # secondary_configs << final_range_chunks # [@max - 1, @max]
+        puts "sm-configs: #{secondary_configs.inspect}"
+      
+        proc_hash[key] = fork {
+          pipes[key].first.close
+          result = false
+          while ((! result) && (secondary_configs.size > 0))
+            config_ary = secondary_configs.shift
+            puts "sm-trying config: #{config_ary.inspect}; #{secondary_configs.size} left"
+            result = solve_non_recursive([], 0, 0,*config_ary)         
+      
+          end
+          pipes[key].last.write result ? result : "false"
+          pipes[key].last.close
+          puts "thread small DONE"
+        }
+      
+        pipes[key].last.close
+        
+      end
+      
+      deleted_pids = []
+      
+      while ((!result) && (deleted_pids.size < proc_hash.keys.size))
+        proc_hash.each do |key, pid|
+          next if deleted_pids.include?(pid)
+          if Process.waitpid(proc_hash[key], Process::WNOHANG)   #=> nil
+            deleted_pids << pid
+            
+            # rd.read
+            result = pipes[key].first.read
+            result = (result == "false") ? false : result.split(//)
+      
+            puts "result is now: #{result.inspect}"
+            
+            # rd.close
+            pipes[key].first.close
+      
+          end
+      
+        end #each pid
+      end # end while not-result
+      puts "done while loop"
+      
+      # Kill remaining procs
+      proc_hash.each do |key,pid|
+        next if deleted_pids.include?(pid)
+        Process.kill("KILL", pid)
+        deleted_pids << pid
+      end
+      
+      puts "deleted all pids: #{deleted_pids.inspect} <=> #{proc_hash.inspect}"
+      
+      ### END MULTIPROCESS
 
-    end
-
-  end #each pid
-end # end while not-result
-puts "done while loop"
-
-# Kill remaining procs
-proc_hash.each do |key,pid|
-  next if deleted_pids.include?(pid)
-  Process.kill("KILL", pid)
-  deleted_pids << pid
-end
-
-puts "deleted all pids: #{deleted_pids.inspect} <=> #{proc_hash.inspect}"
-
-### END MULTIPROCESS
-
-#       ### BGN THREADED
-#       all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
-#       thread_ary = []
-#       puts "lg-configs: #{all_size_configs_reverse.inspect}"
-#       
-#       thread_ary[thread_ary.size] = Thread.new do
-#         Thread.current["result"] = false
-#         while ((! Thread.current["result"]) && (all_size_configs_reverse.size > 0))
-#           config = all_size_configs_reverse.shift
-#           puts "lg-trying config: #{config.inspect}; #{all_size_configs_reverse.size} left"
-#           Thread.current["result"] = solve_recursive([], 0, 0,*config)          
-#         end
-#         puts "thread large DONE"
-#       end
-#       
-#       if all_size_configs.size > 1
-#         all_size_configs = all_size_configs[0..-2]
-#         puts "sm-configs: #{all_size_configs.inspect}"
-#         
-#         thread_ary[thread_ary.size] = Thread.new do
-#           Thread.current["result"] = false
-#           while ((! Thread.current["result"]) && (all_size_configs.size > 0))
-#             config = all_size_configs.shift
-#             puts "sm-trying config: #{config.inspect}; #{all_size_configs.size} left"
-#             Thread.current["result"] = solve_recursive([], 0, 0,*config)
-#           end
-#           puts "thread small DONE"
-#         end
-#       end
-# 
-#       # if we run out of threads || we get a result STOP
-#       thread_ary_size = thread_ary.size
-#       deleted_threads = []
-#       until thread_ary_size <= 0 || result
-#         sleep 0.01
-#         thread_ary.each_with_index do |thr,i|
-#           next if deleted_threads.include?(i)
-# 
-#           if ! thr.status
-#             # puts "thread_ary.size was: #{thread_ary.size} vs. #{thread_ary_size}"
-#             # thread_ary.delete(i) # BAD modifying loop-xxx... doesn't work
-#             unless deleted_threads.include?(i)
-#               thread_ary_size -= 1
-#               deleted_threads << i
-#               puts "deleted thread: #{i}"            
-#             end
-# 
-#             if thr && thr["result"]
-#               #got what we wanted
-#               result = thr["result"]
-#             end # if got result
-#             
-#             # puts "calling break..."
-#             break
-# puts "never here?!"
-#           end # if thread done
-# # puts "end of for-loop"
-#         end # loop through threads
-# # puts "end of while-loop"
-#       end # while
-# 
-#       #kill all other threads
-#       thread_ary.each {|thr| thr.kill }
-#       ### END THREADED
+      #       ### BGN THREADED
+      #       all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
+      #       thread_ary = []
+      #       puts "lg-configs: #{all_size_configs_reverse.inspect}"
+      #       
+      #       thread_ary[thread_ary.size] = Thread.new do
+      #         Thread.current["result"] = false
+      #         while ((! Thread.current["result"]) && (all_size_configs_reverse.size > 0))
+      #           config_ary = all_size_configs_reverse.shift
+      #           puts "lg-trying config: #{config_ary.inspect}; #{all_size_configs_reverse.size} left"
+      #           Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)          
+      #         end
+      #         puts "thread large DONE"
+      #       end
+      #       
+      #       if all_size_configs.size > 1
+      #         all_size_configs = all_size_configs[0..-2]
+      #         puts "sm-configs: #{all_size_configs.inspect}"
+      #         
+      #         thread_ary[thread_ary.size] = Thread.new do
+      #           Thread.current["result"] = false
+      #           while ((! Thread.current["result"]) && (all_size_configs.size > 0))
+      #             config_ary = all_size_configs.shift
+      #             puts "sm-trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+      #             Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
+      #           end
+      #           puts "thread small DONE"
+      #         end
+      #       end
+      # 
+      #       # if we run out of threads || we get a result STOP
+      #       thread_ary_size = thread_ary.size
+      #       deleted_threads = []
+      #       until thread_ary_size <= 0 || result
+      #         sleep 0.01
+      #         thread_ary.each_with_index do |thr,i|
+      #           next if deleted_threads.include?(i)
+      # 
+      #           if ! thr.status
+      #             # puts "thread_ary.size was: #{thread_ary.size} vs. #{thread_ary_size}"
+      #             # thread_ary.delete(i) # BAD modifying loop-xxx... doesn't work
+      #             unless deleted_threads.include?(i)
+      #               thread_ary_size -= 1
+      #               deleted_threads << i
+      #               puts "deleted thread: #{i}"            
+      #             end
+      # 
+      #             if thr && thr["result"]
+      #               #got what we wanted
+      #               result = thr["result"]
+      #             end # if got result
+      #             
+      #             # puts "calling break..."
+      #             break
+      # puts "never here?!"
+      #           end # if thread done
+      # # puts "end of for-loop"
+      #         end # loop through threads
+      # # puts "end of while-loop"
+      #       end # while
+      # 
+      #       #kill all other threads
+      #       thread_ary.each {|thr| thr.kill }
+      #       ### END THREADED
 
       @path = result
-      puts "returning path: #{@path}\n";
+      puts "returning path: #{@path}\n"
       return result
     end
 
+    # tweaked ideal_range for speed; (2, 4,) 8 is by far the fastest!
+    # ? largest 2^n that is (strictly) < total_range (?!)
+    # odd, some levels respond better to three_to_the_n
+    # but it's not clear when to use which one...
+    def previous_three_or_two_to_the_n( value )
+      i = 1
+      previous_two_n = two_n = 2
+      
+      begin
+        previous_two_n = two_n
+        i += 1
+        two_n = 2 ** i
+      end while two_n < value
 
-    # use # of bombs scattered in lower right portion of graph to determine size-ordering (?!)
+      return previous_two_n if two_n == value
+      
+      i = 1
+      previous_three_n = three_n = 3
+      
+      begin
+        previous_three_n = three_n
+        i += 1
+        three_n = 3 ** i
+      end while three_n < value
+      
+      return previous_three_n if three_n == value
+        
+      puts "hmm...: #{previous_two_n} v. #{previous_three_n}"
+      
+       # [ previous_three_n, previous_two_n][rand(2)]
+     first_bomb_down(value, previous_three_n < previous_two_n ? previous_three_n : previous_two_n)
+      # if even?(options[:level])
+        # previous_three_n < previous_two_n ? previous_three_n : previous_two_n
+      # else
+        # previous_three_n > previous_two_n ? previous_three_n : previous_two_n
+      # end
+    end
+    
+    # i'm wondering if I need some formula like - sides of triangle:
+    # board size (hypotenuse); min/max (and/or range); chunk-size
 
-    #sizes = [ :small, :xlarge, :large, :med ]
-    #if @map.width < 32
-    #  sizes = [:small, :med, :large, :xlarge]
-    #elsif @map.width > 32
-    #  sizes = [:med, :small, :large, :xlarge]
-    #elsif @map.width > 64
-    #  sizes = [:med, :large, :small, :xlarge]
-    #end
-    # puts "trying sizes: #{sizes.inspect}"
-
-    # # @path_max = 0
-    # # @start_path = []; @start_row = @start_col = 0
-    # while ((! result) && sizes.size > 0) # @path_max < @max
-    #   # dt_diff = @dt_count - @do_count
-    #   # if dt_diff > 0.3 * @do_count
-    #   #   puts "swapping to dt(#{dir_two}), first..."
-    #   #   tmp_dir = dir_one
-    #   #   @dir_one = dir_two
-    #   #   @dir_two = tmp_dir
-    #   #   puts "ok: dir_two: #{dir_two}; dir_one: #{dir_one}"
-    #   # end
-    #   # @dt_count = @do_count = 0
-    # 
-    #   if diff < 10
-    #     @path_min = @min_size
-    #     @path_max = @max
-    #     sizes = []
-    #   else
-    #     config(sizes.shift)
-    #   end
-    #   puts "#{@min_size} >> #{@path_min} - #{@path_max} << #{@max}"
-    #   # result = solve_recursive() # @start_path, @start_row, @start_col)
-    #   result = solve_non_recursive() # @start_path, @start_row, @start_col)
+    # def even?(num)
+    #   num % 2 == 0
     # end
-    # 
-    # sizes = [:xsmall, :small, :med, :large, :xlarge]
 
-    def config(a_min=@min_size,a_max=@max,ideal_range=3)
+    def first_bomb_down(total_range, previous_answer)
+      return 1 if total_range < 2
+      
+      row = col = 0
+      while map.avail?(row + 1,col)
+        row += 1
+      end
 
+      return previous_answer if row >= total_range || row < 2
+      row
+    end
+
+    def calc_ideal_range(a_min,a_max)
       total_range = diff(a_min,a_max)
+      # ideal_range = (total_range / 2) + 2
+      # 141 => 27 sec w/ ideal == 11; 6 => 3.6secs!
+      
+      # lvl 105 4 took longer than 2 (3 => 34.44sec is faster; 9 => 28.72sec)
+      # lvl 141 ideal 16 => 52.010888 seconds; 6 => 3.5sec
+      # lvl 142 ideal 16 => 357(ish) seconds; 9 => 327.488456; 8 => 193.461321; 4 => 25.313618; 2 => 8.154743
+      
+      ideal_range = map.width / total_range
+      puts "divided #{ideal_range}-times evenly" if 0 == (map.width % total_range)
+      fbd = first_bomb_down(total_range, ideal_range)
+      ideal_range = (0 == (map.width % total_range)) ? ideal_range : fbd
+      puts "ideal_range: #{ideal_range} (out of #{map.width})"
+      
+      ideal_range
+    end
 
-      return [[a_min, a_max]] if total_range <= ideal_range
+    def config(a_min=(@min - 1),a_max=@max, ideal_range=nil)
+      ideal_range = calc_ideal_range(a_min,a_max) unless ideal_range
+      total_range = diff(a_min,a_max)
+      puts "min: #{a_min} - max: #{a_max}; total_range: #{total_range}"
+      return [[a_min, a_max]] if total_range < 2 || ideal_range < 2 || total_range <= ideal_range
 
       ranges = []
       r_min = a_min
@@ -631,7 +612,7 @@ puts "deleted all pids: #{deleted_pids.inspect} <=> #{proc_hash.inspect}"
       while ((r_max <= a_max) && (r_min < a_max))
         puts "adding: #{r_min}:#{r_max}"
         ranges << [r_min,r_max]
-        r_min += (ideal_range + 1)
+        r_min += ideal_range # + 1
         
         if r_min >= a_max
           r_min = r_max # former max
@@ -647,35 +628,36 @@ puts "deleted all pids: #{deleted_pids.inspect} <=> #{proc_hash.inspect}"
       ranges
     end
 
-    def diff(a_min=@min_size,a_max=@max)
+    def diff(a_min=@min,a_max=@max)
       a_max - a_min
     end
-    # distance:
-    def mid(a_min=@min_size,a_max=@max)
-      a_min + half(a_min, a_max)
-    end
-
-    # amount:
-    # an eighth:
-    def one_eighth(a_min=@min_size,a_max=@max)
-      one_fourth(a_min, a_max) / 2
-    end
-    alias :one_bit :one_eighth
-
-    # require './lib/robot.rb'
-    # r = Robot.new
-    # r.min = 3
-    # r.min_size = 2
-    # r.max = 10
-
-    # amount
-    def half(a_min=@min_size,a_max=@max)
-      diff(a_min, a_max) / 2
-    end
-
-    def one_fourth(a_min=@min_size,a_max=@max)
-      half(a_min, a_max) / 2
-    end
+    
+    # # distance:
+    # def mid(a_min=@min_size,a_max=@max)
+    #   a_min + half(a_min, a_max)
+    # end
+    # 
+    # # amount:
+    # # an eighth:
+    # def one_eighth(a_min=@min_size,a_max=@max)
+    #   one_fourth(a_min, a_max) / 2
+    # end
+    # alias :one_bit :one_eighth
+    # 
+    # # require './lib/robot.rb'
+    # # r = Robot.new
+    # # r.min = 3
+    # # r.min_size = 2
+    # # r.max = 10
+    # 
+    # # amount
+    # def half(a_min=@min_size,a_max=@max)
+    #   diff(a_min, a_max) / 2
+    # end
+    # 
+    # def one_fourth(a_min=@min_size,a_max=@max)
+    #   half(a_min, a_max) / 2
+    # end
 
     #
     # a string version of the current path-array

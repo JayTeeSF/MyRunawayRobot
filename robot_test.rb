@@ -121,7 +121,7 @@ class RobotTest < Test::Unit::TestCase
         # rbx-1.0.1 143.73234
         # rbx-1.0.1 (w/ fill-in dead-ends): 127.784013
         # 116.897795
-        # shrunk range of acceptable paths: 9.978728
+        # shrunk range of acceptable paths: 9.978728 ...sadly I may have been skipping some chunks, it's now: 14.353554
         expected_time_in_secs = 9.978728 # new personal best: 242.912, bog:202.738, bog:163.7; wha?: 256.265; k: 203.64; hmm: 207.532; k: 161.941
         perf_tests(expected_time_in_secs, @level_119_config, 'level 119 (via fast-jRuby)', 5)
       end
@@ -172,9 +172,10 @@ class RobotTest < Test::Unit::TestCase
       def test_possible_mix
         puts "setup possible(m-mix) robot"
         @robot = Robot.new @med_mix_config
-        #@robot.map.draw_matrix
+
         puts "test_possible_puzzles_mix"
         assert_nothing_raised { @path = @robot.solve }
+        puts "path: #{@path.inspect}"
         assert( @path.join =~ /^DRD[DR]*$/)
       end
 
@@ -278,6 +279,7 @@ def test_regress_4
   rs = @robot.path.size
   assert(rs >= @broken_config4[:ins_min] && rs <= @broken_config4[:ins_max], "path is #{rs} and it's suppose to be in the range #{@broken_config4[:ins_min]}..#{@broken_config4[:ins_max]}")
   assert( @path && !@path.empty? )
+  # assert( @path == ["D", "D", "D", "R", "D", "D", "R", "R"] )
   assert( @path.join == @robot.path )
 end
 

@@ -1,0 +1,237 @@
+Jonathan-Thomass-MacBook-Pro-2:src jthomas$ ruby ./robot_rerun.rb -n test_140
+Loaded suite ./robot_rerun
+Started
+reading config file
+..............................................................................................................................................!
+constructing matrix...
+
+#-->
+R . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X X . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X X X . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X X X . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . X X X X . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X . . . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . . . . . . . X . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . . . . . . . . X X . . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . X X X . . . . X X X . X X X . . X . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . X X X X . . . . . . . . . . X . . . X X . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X . . . X X X . . . . . X X . . . X . . X X X X X X X X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X X . . X X X . . . . . X X . . . . . . X X X X X X X X . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X X . . X X X X . . . . X X . . . X . . X X X X X X X X X . . X . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X X X X X X . . X X X X X . . . X X . X . . X . X X X X X X X X X . . . X . . . . . . . . . . . . . . . X X X X X X X X X X X X X X X X
+X X X X X X X X X X . . . . . . . X . . X X . X . . . . X X X X X X X X X X X . . . X X X X X . X . . . . . . . X X X X X X X X X X X X X X X X
+X X X X X X X X X X . X X . . X . . X . . . . X X . . . X X X X X X X X X X X X . . X X X X X . X . X . . . . . X X X X X X X X X X X X X X X X
+X X X X X X X X X X . X X . . . . . . . . . . X X X X . X X X X X X X X X X X X . . X X X X X . . . . . X X X . X X X X X X X X X X X X X X X X
+X X X X X X X X X X . . X X X X X . . . . X . X X X X . X X X X X X X X X X X X . . X X X X X . . . . . X X X . . . . . . X X X X X X X X X X X
+X X X X X X X X X X X . X X X X X X X X . . . . . . . . X X X X X X X X X X X X . . X X X X X X X X X . X X X . . . . . . . . . . X X X X X X X
+X X X X X X X X X X X . X X X X X X X X . . . . . . . . . X X X X X X X X X X X . . X X X X X X X X X . . . X . X . . . . X . . . X X X X X X X
+X X X X X X X X X X X . . X X X X X X X . . . . X . X . . . . . . . . . X X X X . . X X X X X X X X X . X . X . X X . . . . . . . . . X X X X X
+X X X X X X X X X X X . . X X X X X X X . . . . . . . . . . . X X X . . X X X X X . . X X X X X X X X . . . . . X X X . . X X . . . . X X X X X
+X X X X X X X X X X X X . X X X X X X X . . X . X . X X . . . X X X X . X X X X X X . . . . . X X X X . X . . . . X X . . X X X X X . . . . . .
+X X X X X X X X X X X X . X X X X X X X . . . . . . X X . . . . . . X . . X X X X X . . . . . . . . . . X . . . . . . . . X X X X X X X . . X .
+X X X X X X X X X X X X . . X X X X X X . . X . . . X X X X X . . . . X . X X X X X . X . . X X . X . . X . X . . . . X . . X X X X X X . . . .
+X X X X X X X X X X X X . . . . X X X X . . . . . . X X X X X . . . . . . . . . . . . . . . X X . . X . . . . . X . . . X . X X X X X X X . . X
+X X X X X X X X X X X X . . . . X X X X . . . . . . X X X X X . . . . . X X X . . X . . X . X X . . . . . . . . . . X . . . . . . . X X X . . .
+X X X X X X X X X X X X X X X . X X X X X X X . . . . . X X X . . . . . . . . . . . . . . . X X . X . X X . X X . . . . . X X . . . X X X X X .
+X X X X X X X X X X X X X X X . X X X X X X X . . . . . X X X X X X X X X X X X X . X . . . . . . . . X X . . . . X . . . . . X X . X X X X X X
+X X X X X X X X X X X X X X X . . X X X X X X X X . . . . . . . X X X X X X X X X . . X X X . . . . . . X X X . . . X . . . . X X . . . X X X X
+X X X X X X X X X X X X X X X . . X X X X X X X X . . . . . . . X X X X X X X X X . . X X X X X X X . . X X X . . . . . . . . . . . . . . . X X
+X X X X X X X X X X X X X X X . . X X X X X X X X . . . . X . . X X X X X X X X X X . . . X X X X X X . . . . . . . . . . . . X X . . . . . X X
+X X X X X X X X X X X X X X X . . . . X X X X X X X X X . . . . X X X X X X X X X X X . . X X X X X X . . X . X X X X X X X . X X X . . . . . .
+X X X X X X X X X X X X X X X . . X . X X X X X X X X X . . . . X X X X X X X X X X X . . X X X X X X X . . . X X X X X X X . . . X X X X X . .
+X X X X X X X X X X X X X X X . . . . . . X X X X X X X . X . . . X X X X X X X X X X X . X X X X X X X X . . X X X X X X X . . . . . X X X X X
+X X X X X X X X X X X X X X X . X X . . . . . X X X X X . . . . . X X X X X X X X X X X . X X X X X X X X . . X X X X X X X X X . . . X X X X X
+X X X X X X X X X X X X X X X . X X . . . . . X X X X X . . X . . X X X X X X X X X X X . . . X X X X X X X . . X X X X X X X X . . . X X X X X
+X X X X X X X X X X X X X X X . X X X . X X . . . . . . . . . . . . . X X X X X X X X X . . . X X X X X X X . . X X X X X X X X . . . . . X X X
+X X X X X X X X X X X X X X X . X X X . X X . . . X . . . . . . . . . X X X X X X X X X X X . X X X X X X X X . X X X X X X X X X X . . . . X X
+X X X X X X X X X X X X X X X . X X X . . . X . . X X . X X X X X . . X X X X X X X X X X X . . . . . . X X X . X X X X X X X X X X . . . . X X
+X X X X X X X X X X X X X X X . . . . . X . . . . X X . . X X X X X . . . . . . X X X X X X . . . . . . . . X . . X X X X X X X X X X X . . . .
+X X X X X X X X X X X X X X X . . . . . X X X X . X X X . X X X X X . . X . X . X X X X X X . X X . . . . . . . . X X X X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X . . . X X . X X X . X X X X X . . X . . . X X X X X X . X X . . . . X . X . X X X X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X . . . X X . X X X . . . . . . . . . . . . X X X X X X . . . X . X . . . . . X X X X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X . X . X X . . . . . . . . X X X . . . . . . . . . . . X . . . . . . . . . . X X X X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X . . . . . . . X X . . X . . X X X . X X . X X . . . . . . . . X X X X . . . . . X X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X . . . . X . . X . . . X . X X . X X X . . . . . . . . . . . . X X X . X X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X . . . X . . . . . . X . . . . X X X . . X . . . . X X . . . X X X . . X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X . X . . . . X . . . . X . X X X . . . X X . . X X X . . . X X . . X X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . . X X X . . X . . . . . . . X X X . . X X . X . X X X . . X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . X X X . . . . . . . . X . X X X . . X X . . . . . . . . X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . X X X X . . . . . . . . . X X X X . . . . . . X X . X . X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . X X X X X . . . . X . . . X X X X X X . X X . X X . . . X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . X X X X X X . . . X . . . X X X X X X . X X . . . . X . X X X X X X X X X X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . X X X X X X X . . . . X . X X X X X X . . X . . . . X . X X X X X X X X X X X
+#<--
+
+
+starting level 140...
+trying sizes: [:small, :med, :large, :xlarge, :xxlarge]
+trying small...
+^CF
+Finished in 1.457182 seconds.
+
+  1) Failure:
+test_140(RobotRerun)
+    [./robot_rerun.rb:66:in `try'
+     ./robot_rerun.rb:48:in `test_140'
+     kernel/bootstrap/array.rb:163:in `each'
+     kernel/bootstrap/array.rb:163:in `each']:
+Exception raised:
+Class: <Interrupt>
+Message: <"Thread has been interrupted">
+---Backtrace---
+kernel/loader.rb:109:in `signals {}'
+kernel/common/signal.rb:71:in `run_handler'
+kernel/delta/rubinius.rb:194:in `received_signal'
+./lib/robot.rb:199:in `dir_one'
+./lib/robot.rb:224:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:239:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:227:in `solve_recursive'
+./lib/robot.rb:306:in `solve'
+./robot_rerun.rb:66:in `try {}'
+./robot_rerun.rb:66:in `try'
+./robot_rerun.rb:48:in `test_140'
+kernel/bootstrap/array.rb:163:in `each'
+kernel/bootstrap/array.rb:163:in `each'
+---------------
+
+1 tests, 1 assertions, 1 failures, 0 errors
+Jonathan-Thomass-MacBook-Pro-2:src jthomas$ ruby ./robot_rerun.rb -n test_141
+Loaded suite ./robot_rerun
+Started
+reading config file
+..............................................................................................................................................!
+constructing matrix...
+
+#-->
+R . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . X . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. X . . . . . . . . . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. X . . . . . . X X . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+. . . X X X . . . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X . . X X X X X . . . X X . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X . . X X X X . . . . . X . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X . . . X X X . . . . . X X X . X . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X . . . . . X . . . . . . X . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . X X . . . . . . X . . . . X . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . X . . X . X . X . . X . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . X X . . . . . . . . X . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . X X . . . . . . X . . . . . . . . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . X X . . X . . . . . . . . . . . . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . . . . . . . . X . . X . . . X . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . . . . . X . . . . . X X . . . X . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . . . . . X . . . . . X X . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . X . X . . . X X . . . . . . . . . . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . X . . . . . X X . . . . . . . . X . X . . X . . . X . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . X X . X . X X . . . . X X . . . . . . . . . . . . X . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . X X . . . . . . . . . X X . . . . . . . X . X . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . X X X X X X X X . . . . . . . . . X X . . . . X X . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X . . . . . X X X X X X X . . . . X . . . X X X . . . . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X . X . . X X X X X X X . . . . . . . . . X X . . . X . X X X . X X . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X X X X
+X X X X X . . . . . X X X X X X . X X . X . . . . . . . . . . . . . . . X X X X X . . . . . . . . . . . X X X X X X X X X X X X X X X X X X X X X
+X X X X X X . . . . X X X X X X . X X . . . . . . . . . . . . . . X X . . . . X X . X X X . . . . . . . X X X X X X X X X X X X X X X X X X X X X
+X X X X X X . . . . X X X X X X . . . . . . . . . . X . . . . . . X X . X . . . X . . X X . . . X . X . . . . . . . . X X X X X X X X X X X X X X
+X X X X X X X . . . X X X X X X X X X . . . X . . . . X X X . . . X X . . . . . . X . X X . . . . . . . . X X . . X . . . . . . . . . X X X X X X
+X X X X X X X . . . X X X X X X X X X . . . . . . . . X X X . . . X X X . . . . . . . . . . . . . . . X . X X . . . X X X X . . . X . X X X X X X
+X X X X X X X . . . . . . . X X X X X X X X . X . . . X X X . . . . . X . . . . . . . . . . . . . . . X . X X . . . X X X X X . . . . X X X X X X
+X X X X X X X . . . X . . . . . X X X X X X . . . . . X X X . X X . . . X . X . X . . X X X . . X . . . . X X . . . X X X X X . . . . X X X X X X
+X X X X X X X . . . . . . . . . X X X X X X X X X . . X X X . . . . . . . . . . X . . . . X . . . . . . . . . . . . . . . . . X . . . X X X X X X
+X X X X X X X . . . . . . . . . X X X X X X X X X . . . . . . . . . . . . . X . . . . X . . . . . . X . . . . . . . X X . . . . . . . X X X X X X
+X X X X X X X . . . X X . . X . X X X X X X X X X . X X . . . . . . X . . . . . . . . . . . . . . . . . . . . X X . . . . . . . . . . . . . . . .
+X X X X X X X . . . X X . . . . X X X X X X X X X . . X . . . . . . X X X X . . . . . . . . . . X . . . X . . X X . X . . X X X X . . . . X . X X
+X X X X X X X . . . . X . . . . . X X X X X X X X . . . X . . . . . . X X X . . . . . . X X X . . . . . X . . . . . . . . X X X X X X . . . . X X
+X X X X X X X X . . . X X . . . . . . . . . . . . . X . . . . . . . . . . . . . X X . . . X X X . . . . . . . . . . . X . X X X X X X . . X . . .
+X X X X X X X X . . . . X . . . . . . . . X . . . . . . . . . . . . . . . . . . . . . . . X X X . . . X . X . X . . . . . . . X X X X . . X X . .
+X X X X X X X X . . . . X X X X . . . . . . X . X . . X . X . . X . . . X . . . X . . . . X X X . . . . . . . . . X . . . . . . X X X . . . . . .
+X X X X X X X X X . . . X X X X X . . . . . X . . . . . . . . . X X . . . . . . . . . . . X X X X X X X X . . . . X . . X X X . X X X X X X X X .
+X X X X X X X X X X . . . . X X X . X . . . . . . . . . . . . . X X X . . X . X X . . . . X X X X X X X X . . . . . . . . . . . . . X X X X X X .
+X X X X X X X X X X . X X . X X X . . . . . X X . . . . . . . . X X X . . . . X X . X X . X X X X X X X X . . . . X . . . . . . X . . X X X X X X
+X X X X X X X X X X . . . . X X X . . . . . X X . . . X . . . . X X X X . . . . . . . . . X X X X X X X X . . . . . X X . X X . . . . X X X X X X
+X X X X X X X X X X . . . . . . . . X . . . . . . . . . . . . . . . . . . . . . . . . . . . X X X X X X X . . X . . . . . X X X . . . X X X X X X
+X X X X X X X X X X X X . . . . X . . . . . X . . X X X X . X . X . . . . . . X X . X . . . . X X X X X X . . . . X X . . X X X . . . X X X X X X
+X X X X X X X X X X X X . . . . . X X X . . . . . X X X X . . . . . . . . . . . . . . . . . . . . . . X X . . . . . . . . X X X X X . . . X X X X
+X X X X X X X X X X X X . . . . . X X X . . . . . X X X X X . . . . . . . X . . X . . X . . . X X X . . . . X . . . . . . . . . X X . . . . X X X
+X X X X X X X X X X X X . . . . . . . . . . X . . X X X X X . X X X . . . . X . . X . . . . . X X X . . . . . . X . . . . X . . X X . X X . . . .
+X X X X X X X X X X X X . . X X . . . . . . . . . X X X X X . X X X X . . . . . . . . . X . . . . . . X . X . . . X . . . X . . . . . X X . . . .
+X X X X X X X X X X X X . . . . . . . . . . . . . X X X X X . . . . . . . . X . . . X . . . X . . . . . . . X . . X . . . . . X . . . . . . . X .
+X X X X X X X X X X X X X X X X . . . . . . . . . X X X X X X X X . . . . . . . . . . . . . . . . . . . . . . . . . X . . X . . . . . . . . . . .
+X X X X X X X X X X X X X X X X X X . . . . . . . . . . . X X X X . . X . . . X X . . . . . . . . . . . X X . . . . . . . . . . . . . . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X . . X X X . X X X X X . . . X . . . X . . . . . . . . . . . . . X X X . X X X . . X . . . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X . . X X X . . . X X X X . . . . X . . X . . . . . . X . X X . . X X X . . . . . . . . . . . X X X .
+X X X X X X X X X X X X X X X X X X X X X X X . . X X X X . . X X X X X X . . . . . . . . X . . . . . . . X . . X X . . X X X X X X X . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X . . . . X X X . X X X X X X . . X . . . . . . . . . X . . . . . . X X X . X X X X X X X . . . . . X
+X X X X X X X X X X X X X X X X X X X X X X X X X . . X X X . X X X X X X . . . . X X X . . X . . . . X . X . . X X X . X X X X X X X . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X . . X X X . X X X X X X X . . . X X X X . . . . . . . . . . . X X X . . . . . . . . X X X . X .
+X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . . . . . . . . . . . . X X X . . X X . . X X X . . X X X . . . . X X . . . X X . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X . . . X X . . . . . . . . . X . . . . . . . . . . . X X . . . . . . X . . X X . X . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X . X . . . . . . . . X . . . . . . . . . . . . X X . . . X . . . . . . . . X X . . . . X . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X . . . X X . . . . . . . X X X X X X X X . . . X X . X . . . . X . . X . . X X . . . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X X . . X X . X X X . . . X X X X X X X X X . . X X . . . X X . . . . . X . . . . . . . X . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . X X X X X . X X X X X X X X X . . . . . . . X X . . . . . . X X . . . . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . . X X X . X X X X X X X X X . . . . . . . . . . . . . . . X X . X . . . . . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . X . X X X X X X X X X . . . . . . . . . X X . . X . . . . . . X X . . X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . X X X X X X X X X X . X . . . . . . . . . . X X X . . . . X X . . X X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . X X X X X X X X X X . . . X X . . . X X X . . X X . . . . X X . . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . . . . . . . . . . . . X X X . . X X X . . . . . . . . . . . . . X
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . X . X X X . X X X X X . . X X X . . X X X . . . . . . . X . X X . . .
+X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X . . . . . X X X . . X X X X . . . X X . . X X X . . . . X . . . . X X . X X
+#<--
+
+
+starting level 141...
+trying sizes: [:small, :med, :large, :xlarge, :xxlarge]
+trying small...
+Found it (["D", "D", "R", "R", "D", "D", "R", "R", "R", "R", "R", "D", "D", "R", "D", "D", "D", "R", "D", "D", "R", "D", "D", "R", "R", "D", "D", "D", "R"])!
+actually took 4.074452 seconds.
+.
+Finished in 4.447392 seconds.
+
+1 tests, 2 assertions, 0 failures, 0 errors
+Jonathan-Thomass-MacBook-Pro-2:src jthomas$ 
+

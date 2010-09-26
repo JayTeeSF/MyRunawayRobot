@@ -36,12 +36,28 @@ class RobotRerun < Test::Unit::TestCase
     return config # apparently return(s) must be explicit from an ensure block...
   end
 
-  def test_107
-    try 107
+  def test_106
+    try 106
   end
 
-  def test_105
-    try 105
+  def test_104
+    try 104
+  end
+
+  def test_140
+    try 140
+  end
+
+  def test_141
+    try 141
+  end
+
+  def test_141
+    try 141
+  end
+
+  def test_98
+    try 98
   end
 
   def test_all_levels
@@ -53,6 +69,7 @@ class RobotRerun < Test::Unit::TestCase
   def try level
     @robot = Robot.new @config[level].merge(:debug => false)
 
+    puts "returning path - min: #{@config[level][:ins_min]} max: #{@config[level][:ins_max]}"
     puts "\n\nstarting level #{level}..."
     begin_time = Time.now
     assert_nothing_raised { @path = @robot.solve }

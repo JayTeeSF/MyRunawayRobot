@@ -3,6 +3,7 @@ class Map
   # BAD_CYCLE_LEN = 5
   @@solutions = './solutions.txt'
   attr_accessor :height, :width, :terrain, :matrix, :debug, :max_cycle
+  #, :exit_r_and_d_counts
   #, :known_bad_cycles, :use_known_bad, :store_bad, :check_bad, :bad_cycle_len
 
   def initialize(options={})
@@ -14,6 +15,7 @@ class Map
 
     # must call config from elsewhere!
     # config(options) if options && options != {}
+    # @exit_r_and_d_counts = [] # e.g. [[5,7], [6,7], etc...]
   end
 
   #
@@ -137,6 +139,8 @@ class Map
     fill_in_dead_ends true
     fill_in_dead_ends false
 
+    # exit_r_and_d_counts
+    
     #returns = []
     #@width.times{ returns << "\n" }
     #puts "constructed:\n#{@matrix.zip(returns)}"
@@ -145,6 +149,19 @@ class Map
     # puts "matrix[0].class = #{@matrix[0].class}"
   end
 
+  # TODO: DRY me up
+  def exit_r_and_d_counts
+    col = @width + 1
+    (0..@height).each do |row|
+      @exit_r_and_d_counts << [row, col] if avail?(row,@width)
+    end
+    
+    row = @height + 1
+    (0..@width).each do |col|
+      @exit_r_and_d_counts << [row, col] if avail?(@height,col)
+    end
+    
+  end
 
   def stringify_rows matrix
     (0..(matrix.size-1)).each do |y_val|
@@ -196,7 +213,10 @@ class Map
     terrain_ary = @terrain.split(//)
     increment = 1
     i = -1
-    lambda { i += increment; terrain_ary[i] }
+    
+    # using #'s instead of chars provides a decent speed-up:
+    # actually took 7.633317 seconds vs. 8.838757 ...
+    lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0").to_i }
   end
 
   def immediate_success(row,col)
@@ -306,12 +326,117 @@ class Map
     return true
   end
 
-  # def non_recursive_verify(path_ary=[], row=0, col=0)
-  def verify(path_ary=[], row=0, col=0)
+  def fast_verify(path_ary=[], row=0, col=0)
+    row = path_ary.count(Robot.down)
+    col = path_ary.count(Robot.right)
+
+    w_remainder = h_remainder = start_row = start_col = 0
+
+    puts "path: #{path_ary}; Rdown: #{row}; Cright: #{col}"
+
+    # how many times repeated to get within path_ary.size moves from edge?
+    # path_loc = row + col
+    
+    # BUG: 
+    # trying config: [0, 3]; 1 left
+    # path: D; Rdown: 1; Cright: 0
+    # num_high: 5
+    # looking for: [5, 0] in [[5, 2]]
+    # path: DR; Rdown: 1; Cright: 1
+    # num_high: 5
+    # looking for: [5, 5] in [[5, 2]]
+    # num_wide: 5
+    # looking for: [5, 5] in [[5, 2]]
+    # path: DRD; Rdown: 2; Cright: 1
+    # num_high: 2
+    # looking for: [4, 2] in [[5, 2]] #<-- have to follow the path (upto) one-more cycle -- till we reach this square
+    # it might be nice to identify the entry in path_ary that equates to the # or R's or D's needed; then test if coord matches
+    # this is looking like too much work!
+    # num_wide: 5
+    # looking for: [4, 5] in [[5, 2]]
+    # trying config: [4, 5]; 0 left
+    # path: DRDDR; Rdown: 3; Cright: 2
+    # num_high: 1
+    # looking for: [3, 2] in [[5, 2]]
+    # num_wide: 2
+    # looking for: [3, 4] in [[5, 2]]
+    # returning path: false
+
+    if row != 0
+      # puts "h: #{height}"
+      num_high = (((@height + 1))) / (row) #how-many-more to go down
+      puts "num_high: #{num_high}"
+      start_row = row * num_high # after repeating path, where do we end-up
+      
+      # h_remainder = row ? (@height + 1) % row : 0
+      
+      if col != 0
+        # num_wide = ((@width + 1)) / col
+        start_col = col * num_high
+
+        # what's the remainder (i.e such that we can append path_ary[remainder]) to get our exact exit
+        # w_remainder = col ? (@width + 1) % col : 0
+      end
+      # should probably repeat this for going wide too
+      
+      potential_end = [start_row, start_col]
+      puts "looking for: #{potential_end.inspect} in #{@exit_r_and_d_counts.inspect}"
+      ret_val =  @exit_r_and_d_counts.include?(potential_end)
+      return true if ret_val
+    end
+    # col:
+    if col != 0
+      # puts "h: #{height}"
+      num_wide = (((@width + 1))) / (col) #how-many-more to go across
+      puts "num_wide: #{num_wide}"
+      start_col = col * num_wide # after repeating path, where do we end-up
+            
+      if row != 0
+        # num_wide = ((@width + 1)) / col
+        start_row = row * num_high
+
+        # what's the remainder (i.e such that we can append path_ary[remainder]) to get our exact exit
+        # w_remainder = col ? (@width + 1) % col : 0
+      end
+      # should probably repeat this for going wide too
+      
+      potential_end = [start_row, start_col]
+      puts "looking for: #{potential_end.inspect} in #{@exit_r_and_d_counts.inspect}"
+      ret_val =  @exit_r_and_d_counts.include?(potential_end)
+      return true if ret_val
+    end
+    
+    # rpt for col & row
+    return false unless ret_val
+    puts "hope..."    
+    
+    return non_recursive_verify(path_ary, row,col)
+
+
+    # row = start_row
+    # col = start_col
+    # (0..w_remainder).each do |i|
+    #   row, col = Map.move(path_ary[i], row, col)
+    #   return false if fail(row,col)
+    # end
+    # 
+    # row = start_row
+    # col = start_col
+    # (0..h_remainder).each do |i|
+    #   row, col = Map.move(path_ary[i], row, col)
+    #   return false if fail(row,col)
+    # end
+    # 
+    # return non_recursive_verify(path_ary, start_row,start_col)
+
+  end
+  # alias :verify :fast_verify
+    
+  def non_recursive_verify(path_ary=[], row=0, col=0)
     # path_down, path_across = *[row, col]
     # reverse = path_ary.count(Robot.down) < path_ary.count(Robot.right)
     # success_check =  (ds > rs) ? lambda {|row| row > @height} : lambda {|col| col > @width}
-
+    # puts "verify path_ary: #{path_ary}"
     while true # begin
       # path_ary.size.times do # is this useful ?so far no!?
       path_ary.each do |direction|
@@ -322,6 +447,7 @@ class Map
       return true if success(row,col) # faster to do this single check than multiple checks
     end # while true
   end
+  alias :verify :non_recursive_verify
 
   def recursive_verify(path_ary=[], row=0, col=0)
     path_ary.each do |direction|
@@ -341,11 +467,11 @@ class Map
   end
 
   def self.bomb
-    'X'
+    1 #'X'
   end
 
   def self.safe
-    '.'
+    0 #'.'
   end
 
   # def self.value_of ascii_char

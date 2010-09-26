@@ -1,5 +1,4 @@
 {:terrain_string => "..X...X..", :ins_max => 2, :ins_min => 2, :board_x => 3, :board_y => 3}
-{:terrain_string => "..X...X..", :ins_max => 2, :ins_min => 2, :board_x => 3, :board_y => 3}
 {:terrain_string => ".XX.....X.......", :ins_max => 3, :ins_min => 2, :board_x => 4, :board_y => 4}
 {:terrain_string => "..X.........X..X", :ins_max => 3, :ins_min => 2, :board_x => 4, :board_y => 4}
 {:terrain_string => "..X.XX...XX.....XXX.XXX..", :ins_max => 3, :ins_min => 2, :board_x => 5, :board_y => 5}
