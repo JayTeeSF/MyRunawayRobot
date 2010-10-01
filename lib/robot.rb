@@ -312,15 +312,17 @@ class Robot
       result = false
 
       # # last non-threaded-single-proc version:
+# addendum
+all_size_configs = main_configs
       # # robot_long_performance.rb: 
       # # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
       # puts "configs: #{all_size_configs.inspect}"
-      # while ((! result) && all_size_configs.size > 0)
-      #   # result = solve_recursive(current_path=[], row=0, col=0,*all_size_configs.shift)
-      #   config_ary = all_size_configs.shift
-      #   puts "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
-      #   result = solve_recursive([], 0, 0, *config_ary)
-      # end
+       while ((! result) && all_size_configs.size > 0)
+         # result = solve_recursive(current_path=[], row=0, col=0,*all_size_configs.shift)
+         config_ary = all_size_configs.shift
+         puts "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+         result = solve_recursive([], 0, 0, *config_ary)
+       end
 
       # multiprocess may be better (easier)/more scalable: IO.pipe ?!
       # cmd = "ruby -e '5.times {|i| p i}'"
@@ -338,122 +340,122 @@ class Robot
 # perhaps revert back to multi-process (guess best config-sizing):
 # (randomly) choose another size (2/3 ?!) (going in reverse) for use w/ 2nd-thread
 
-      ### BGN MULTIPROCESS      
-      if main_configs.first == main_configs.last
-        main_configs = [main_configs.first]
-        # all_size_configs_reverse = all_size_configs.dup.reverse
-        secondary_configs = main_configs.dup
-      else
-        # all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
-        secondary_configs = main_configs[1..-1].dup
-      end
-      proc_hash = {}
-      pipes = {} # key1 => [rd, wr], key2 => ...
-      
-      puts "lg-configs: #{main_configs.inspect}"
-      
-      # how-to associate rd/wr pipes w/ the different procs?
-      # how-to check each child-proc (and not confuse their pipes)
-      
-      # lg_rd, lg_wr = IO.pipe
-      key = :lg_pid
-      pipes[key] = IO.pipe
-      proc_hash[key] = fork {
-        pipes[key].first.close
-        result = false
-        while ((! result) && (main_configs.size > 0))
-          config_ary = main_configs.shift
-          puts "lg-trying config: #{config_ary.inspect}; #{main_configs.size} left"
-          result = solve_recursive([], 0, 0,*config_ary)          
-        end
-        pipes[key].last.write result ? result : "false"
-        pipes[key].last.close
-        puts "thread large DONE"
-      }
-      pipes[key].last.close
-      
-      
-      if main_configs.size > 1
-        # new hack to force 2nd-thread/process to try an alternate "path"
-        a_min = @min - 1
-        a_max = @max
-        puts "ideal via previous hack"
-        ideal_lens = []
-        ideal_lens << 2
-        ideal_lens << 3
-        ideal_lens << previous_three_or_two_to_the_n( diff(a_min,a_max) )
-        ideal_len2 = ideal_len
-        while ideal_len == ideal_len2
-            ideal_len2 = ideal_lens.shift
-        end
-        puts "ideal: #{ideal_len2}"    
-        secondary_configs = config( a_min, a_max, ideal_len2 )
-        tmp = secondary_configs.shuffle
-        secondary_configs = tmp
-        # end new hack
-      
-        key = :sm_pid
-        pipes[key] = IO.pipe
-        # final_range_min, final_range_max = *main_configs[-1]
-        # puts "final_range: #{final_range_min}:#{final_range_max}"
-        # final_range_chunks = config(final_range_min, final_range_max,ideal_len)
-        # 
-        # puts "final_range_chunks: #{final_range_chunks.inspect}"
-        # secondary_configs = secondary_configs[0..-2]
-        # secondary_configs << final_range_chunks # [@max - 1, @max]
-        puts "sm-configs: #{secondary_configs.inspect}"
-      
-        proc_hash[key] = fork {
-          pipes[key].first.close
-          result = false
-          while ((! result) && (secondary_configs.size > 0))
-            config_ary = secondary_configs.shift
-            puts "sm-trying config: #{config_ary.inspect}; #{secondary_configs.size} left"
-            result = solve_non_recursive([], 0, 0,*config_ary)         
-      
-          end
-          pipes[key].last.write result ? result : "false"
-          pipes[key].last.close
-          puts "thread small DONE"
-        }
-      
-        pipes[key].last.close
-        
-      end
-      
-      deleted_pids = []
-      
-      while ((!result) && (deleted_pids.size < proc_hash.keys.size))
-        proc_hash.each do |key, pid|
-          next if deleted_pids.include?(pid)
-          if Process.waitpid(proc_hash[key], Process::WNOHANG)   #=> nil
-            deleted_pids << pid
-            
-            # rd.read
-            result = pipes[key].first.read
-            result = (result == "false") ? false : result.split(//)
-      
-            puts "result is now: #{result.inspect}"
-            
-            # rd.close
-            pipes[key].first.close
-      
-          end
-      
-        end #each pid
-      end # end while not-result
-      puts "done while loop"
-      
-      # Kill remaining procs
-      proc_hash.each do |key,pid|
-        next if deleted_pids.include?(pid)
-        Process.kill("KILL", pid)
-        deleted_pids << pid
-      end
-      
-      puts "deleted all pids: #{deleted_pids.inspect} <=> #{proc_hash.inspect}"
-      
-      ### END MULTIPROCESS
+#      ### BGN MULTIPROCESS      
+#      if main_configs.first == main_configs.last
+#        main_configs = [main_configs.first]
+#        # all_size_configs_reverse = all_size_configs.dup.reverse
+#        secondary_configs = main_configs.dup
+#      else
+#        # all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
+#        secondary_configs = main_configs[1..-1].dup
+#      end
+#      proc_hash = {}
+#      pipes = {} # key1 => [rd, wr], key2 => ...
+#      
+#      puts "lg-configs: #{main_configs.inspect}"
+#      
+#      # how-to associate rd/wr pipes w/ the different procs?
+#      # how-to check each child-proc (and not confuse their pipes)
+#      
+#      # lg_rd, lg_wr = IO.pipe
+#      key = :lg_pid
+#      pipes[key] = IO.pipe
+#      proc_hash[key] = fork {
+#        pipes[key].first.close
+#        result = false
+#        while ((! result) && (main_configs.size > 0))
+#          config_ary = main_configs.shift
+#          puts "lg-trying config: #{config_ary.inspect}; #{main_configs.size} left"
+#          result = solve_recursive([], 0, 0,*config_ary)          
+#        end
+#        pipes[key].last.write result ? result : "false"
+#        pipes[key].last.close
+#        puts "thread large DONE"
+#      }
+#      pipes[key].last.close
+#      
+#      
+#      if main_configs.size > 1
+#        # new hack to force 2nd-thread/process to try an alternate "path"
+#        a_min = @min - 1
+#        a_max = @max
+#        puts "ideal via previous hack"
+#        ideal_lens = []
+#        ideal_lens << 2
+#        ideal_lens << 3
+#        ideal_lens << previous_three_or_two_to_the_n( diff(a_min,a_max) )
+#        ideal_len2 = ideal_len
+#        while ideal_len == ideal_len2
+#            ideal_len2 = ideal_lens.shift
+#        end
+#        puts "ideal: #{ideal_len2}"    
+#        secondary_configs = config( a_min, a_max, ideal_len2 )
+#        tmp = secondary_configs.shuffle
+#        secondary_configs = tmp
+#        # end new hack
+#      
+#        key = :sm_pid
+#        pipes[key] = IO.pipe
+#        # final_range_min, final_range_max = *main_configs[-1]
+#        # puts "final_range: #{final_range_min}:#{final_range_max}"
+#        # final_range_chunks = config(final_range_min, final_range_max,ideal_len)
+#        # 
+#        # puts "final_range_chunks: #{final_range_chunks.inspect}"
+#        # secondary_configs = secondary_configs[0..-2]
+#        # secondary_configs << final_range_chunks # [@max - 1, @max]
+#        puts "sm-configs: #{secondary_configs.inspect}"
+#      
+#        proc_hash[key] = fork {
+#          pipes[key].first.close
+#          result = false
+#          while ((! result) && (secondary_configs.size > 0))
+#            config_ary = secondary_configs.shift
+#            puts "sm-trying config: #{config_ary.inspect}; #{secondary_configs.size} left"
+#            result = solve_non_recursive([], 0, 0,*config_ary)         
+#      
+#          end
+#          pipes[key].last.write result ? result : "false"
+#          pipes[key].last.close
+#          puts "thread small DONE"
+#        }
+#      
+#        pipes[key].last.close
+#        
+#      end
+#      
+#      deleted_pids = []
+#      
+#      while ((!result) && (deleted_pids.size < proc_hash.keys.size))
+#        proc_hash.each do |key, pid|
+#          next if deleted_pids.include?(pid)
+#          if Process.waitpid(proc_hash[key], Process::WNOHANG)   #=> nil
+#            deleted_pids << pid
+#            
+#            # rd.read
+#            result = pipes[key].first.read
+#            result = (result == "false") ? false : result.split(//)
+#      
+#            puts "result is now: #{result.inspect}"
+#            
+#            # rd.close
+#            pipes[key].first.close
+#      
+#          end
+#      
+#        end #each pid
+#      end # end while not-result
+#      puts "done while loop"
+#      
+#      # Kill remaining procs
+#      proc_hash.each do |key,pid|
+#        next if deleted_pids.include?(pid)
+#        Process.kill("KILL", pid)
+#        deleted_pids << pid
+#      end
+#      
+#      puts "deleted all pids: #{deleted_pids.inspect} <=> #{proc_hash.inspect}"
+#      
+#      ### END MULTIPROCESS
 
       #       ### BGN THREADED
       #       all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
