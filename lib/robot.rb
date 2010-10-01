@@ -307,7 +307,7 @@ class Robot
     def solve
       a_min= (@min - 1)
       a_max=@max
-      ideal_len = calc_ideal_range(a_min,a_max)
+      ideal_len = calc_ideal_range(a_min,a_max) + 1
       main_configs = config(a_min, a_max, ideal_len)
       result = false
 
