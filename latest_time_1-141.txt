@@ -1,0 +1,24 @@
+Finished in 2555.610818 seconds.
+
+w/ no backup: Finished in 2609.371337 seconds.
+
+
+
+jruby is now fastest:
+ruby --server --fast ./robot_long_performance.rb
+actually took 8.674 seconds vs. expected 9.978728 seconds: 13.0750933385498% decrease.
+# even better:
+ruby --server --fast -J-Djruby.compat.version=RUBY1_8 -J-Djruby.objectspace.enabled=false -J-Djruby.compile.fastops=true -J-Djruby.compile.fastest=true ./robot_long_performance.rb
+actually took 8.275 seconds vs. expected 9.978728 seconds: 17.0735989597071% decrease.
+
+#
+ruby --server --fast -J-Djruby.compile.fastest=true ./robot_long_performance.rb
+actually took 8.26 seconds vs. expected 9.978728 seconds: 17.223918719901% decrease.
+
+
+
+# ruby --server --fast  ./robot_rerun.rb -n test_all_levels
+Finished in 2431.211 seconds.
+
+# cmd: at Wed Oct 13 22:50:49 PDT 2010
+ruby --server --fast -J-Djruby.compile.fastest=true ./runaway.rb 
