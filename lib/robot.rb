@@ -155,32 +155,21 @@ class Robot
 
     # can we get rid of move_hist & dir_hist, and just calculate the row, col values, as needed
     def solve_non_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)	    
-      # move_hist, dir_history = extract_moves_and_dirs(current_path, row, col)
-      # move_hist = extract_moves(current_path, row, col) #lastest-removed
-      # puts "move_hist: #{move_hist.inspect}"
-      # direction_history = BitField.new(map.max_cycle * 2)
-      # dir_idx = dir_history.pop || 0
-      # puts "current_path.last: #{current_path.last}"
-      dir_idx = current_path.last ? dir_to_num(current_path.last) : 0
+      dir_idx = 0 # current_path.last ? dir_to_num(current_path.last) : 0
       # puts "dir_idx: #{dir_idx}"
-      path_size = current_path.size
+      path_size = 0 # current_path.size
       while true
-        sleep 0.001
 
         # puts "cp:#{current_path}; r#{row}/c#{col}"
         if path_size > path_min #@min_size
           if path_size > path_max # @max
             # dir_idx, dir_history, current_path, move_hist = backup(dir_history, current_path, move_hist) #, row, col) 
             current_path, row, col = backup(current_path)
-            # current_path, row, col, move_hist = backup(current_path, move_hist)
-            # row, col = move_hist.last
             path_size = current_path.size
             return false if 0 == path_size
             dir_idx = 1; # puts "^" # try a different direction
-          elsif map.verify(current_path, row, col)
+          elsif map.verify(current_path, row, col) # should pass-request to a queue, and verify in a separate thread
             puts "Found it (#{current_path.inspect})!"
-            # @path = current_path
-            # return @path
             return current_path
           end
         end
@@ -196,17 +185,12 @@ class Robot
         end
 
         if avail
-          # puts "."
-          # dir_history << dir_idx
           current_path << direction(dir_idx)
-          # move_hist << move
           path_size += 1
           row, col = move
           dir_idx = 0
         else
           # backup; we've already tried both directions
-          # dir_idx, dir_history, current_path, move_hist = backup(dir_history, current_path, move_hist) #, row, col)
-          # row, col = move_hist.last
           current_path, row, col = backup(current_path)
           # current_path, row, col, move_hist = backup(current_path, move_hist)
           path_size = current_path.size
@@ -216,8 +200,6 @@ class Robot
 
       end # end while loop
     end
-    #alias :solve :solve_non_recursive
-
 
     # def backup(dir_history, current_path, move_hist) #, row, col)
     def backup(current_path)
@@ -285,6 +267,9 @@ class Robot
 
       # movin_forward = true # not good, need to know when to reset this!!!
       # puts "d: r*#{row}/c#{col}"
+      
+      #return  try(Robot.down(), row, col, current_path, path_min, path_max) || try(Robot.right(), row, col, current_path, path_min, path_max)
+
       move = Map.move(Robot.down(), row, col)      
       if map.avail?(*move)
         r, c = *move
@@ -293,8 +278,6 @@ class Robot
         solution = solve_recursive(sol_path, r, c, path_min, path_max)
         if solution
           return solution
-        # else
-        #   current_path.pop
         end
         # puts "sol_path #{sol_path} vs. curr #{current_path}"
       end
@@ -308,9 +291,6 @@ class Robot
         solution = solve_recursive(sol_path, r, c, path_min, path_max)
         if solution
           return solution
-         else
-      # movin_forward = false # probably true
-        #   current_path.pop
         end
       end
 
@@ -318,7 +298,23 @@ class Robot
       return false
     end
 
+    def try(direction, row, col, current_path, path_min, path_max)
+      move = Map.move(direction, row, col)      
+      if map.avail?(*move)
+        r, c = *move
+        sol_path = current_path.dup
+        sol_path << direction
+        solution = solve_recursive(sol_path, r, c, path_min, path_max)
+        if solution
+          return solution
+        end
+        # puts "sol_path #{sol_path} vs. curr #{current_path}"
+      end
+    end
+
     def solve
+      time_of = {}
+      time_of[:begin] = Time.now
       a_min= (@min - 1)
       a_max=@max
       ideal_len = calc_ideal_range(a_min,a_max) + 1
@@ -330,12 +326,19 @@ class Robot
 #      # # robot_long_performance.rb: 
 #      # # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
 #      # puts "configs: #{all_size_configs.inspect}"
+      time_of[:prep_end] = Time.now
+      i = 0
        while ((! result) && all_size_configs.size > 0)
+      time_of[:"loop_#{i}_begin"] = Time.now
          # result = solve_recursive(current_path=[], row=0, col=0,*all_size_configs.shift)
          config_ary = all_size_configs.shift
-         puts "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+         print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
       # movin_forward = true
          result = solve_recursive([], 0, 0, *config_ary)
+         # result = solve_non_recursive([], 0, 0, *config_ary)
+      time_of[:"loop_#{i}_end"] = Time.now
+      puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
+        i += 1
        end
 
       # multiprocess may be better (easier)/more scalable: IO.pipe ?!
@@ -537,7 +540,8 @@ class Robot
 #             ### END THREADED
 
       @path = result
-      puts "returning path: #{@path}\n"
+      time_of[:end] = Time.now
+      puts "returning path: #{@path}; took: #{time_of[:end] - time_of[:begin]}\n"
       return result
     end
 
