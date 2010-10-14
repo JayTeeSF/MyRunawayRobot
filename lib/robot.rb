@@ -43,6 +43,7 @@ class Robot
       # @dir_one = nil
       # @dir_two = nil
       params.delete(:debug)
+      # movin_forward = true
       instruct(params) if params != {}
     end
 
@@ -73,7 +74,7 @@ class Robot
     #   num_digits = valid_down + valid_right
     #   big_base_ten = 2**(num_digits) - 1
     #   
-    #   (0..big_base_ten).each do |base_ten|
+    #   (0).upto(big_base_ten) do |base_ten|
     #     path_ary = gen_path(base_ten,num_digits)
     #     results << path_ary if filter path_ary, valid_down, valid_right
     #   end
@@ -127,7 +128,7 @@ class Robot
     # robot.find_avail_cells 2
     #  => [[1, 1], [2, 0]] # notice no: [0, 2]!
     def find_avail_cells(n_away, row=0, col=0)
-      (0 .. n_away).collect do |x_val|
+      (0).upto(n_away).collect do |x_val|
         y_val = n_away - x_val
         map.avail?(row + x_val, col + y_val) ? [row + x_val, col + y_val] : nil
       end.compact
@@ -260,17 +261,29 @@ class Robot
     #   Robot.right()
     # end
 
+    def movin_forward=(bool)
+      @movin_forward = bool
+    end
+
+    def movin_forward
+      @movin_forward
+    end
+
+    # when we backup, let's avoid verifying (again)!!!
     def solve_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)
       path_size = current_path.size
       if path_size > path_min #@min_size
         if path_size > path_max # @max
           return false
+        # elsif movin_forward && map.verify(current_path, row, col)
         elsif map.verify(current_path, row, col)
           puts "Found it (#{current_path.inspect})!"
           return current_path
         end
       end
 
+
+      # movin_forward = true # not good, need to know when to reset this!!!
       # puts "d: r*#{row}/c#{col}"
       move = Map.move(Robot.down(), row, col)      
       if map.avail?(*move)
@@ -295,7 +308,8 @@ class Robot
         solution = solve_recursive(sol_path, r, c, path_min, path_max)
         if solution
           return solution
-        # else
+         else
+      # movin_forward = false # probably true
         #   current_path.pop
         end
       end
@@ -310,17 +324,17 @@ class Robot
       ideal_len = calc_ideal_range(a_min,a_max) + 1
       main_configs = config(a_min, a_max, ideal_len)
       result = false
+      all_size_configs = main_configs
 
-      # # last non-threaded-single-proc version:
-# addendum
-all_size_configs = main_configs
-      # # robot_long_performance.rb: 
-      # # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
-      # puts "configs: #{all_size_configs.inspect}"
+#      # # last non-threaded-single-proc version:
+#      # # robot_long_performance.rb: 
+#      # # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
+#      # puts "configs: #{all_size_configs.inspect}"
        while ((! result) && all_size_configs.size > 0)
          # result = solve_recursive(current_path=[], row=0, col=0,*all_size_configs.shift)
          config_ary = all_size_configs.shift
          puts "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+      # movin_forward = true
          result = solve_recursive([], 0, 0, *config_ary)
        end
 
@@ -457,70 +471,70 @@ all_size_configs = main_configs
 #      
 #      ### END MULTIPROCESS
 
-      #       ### BGN THREADED
-      #       all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
-      #       thread_ary = []
-      #       puts "lg-configs: #{all_size_configs_reverse.inspect}"
-      #       
-      #       thread_ary[thread_ary.size] = Thread.new do
-      #         Thread.current["result"] = false
-      #         while ((! Thread.current["result"]) && (all_size_configs_reverse.size > 0))
-      #           config_ary = all_size_configs_reverse.shift
-      #           puts "lg-trying config: #{config_ary.inspect}; #{all_size_configs_reverse.size} left"
-      #           Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)          
-      #         end
-      #         puts "thread large DONE"
-      #       end
-      #       
-      #       if all_size_configs.size > 1
-      #         all_size_configs = all_size_configs[0..-2]
-      #         puts "sm-configs: #{all_size_configs.inspect}"
-      #         
-      #         thread_ary[thread_ary.size] = Thread.new do
-      #           Thread.current["result"] = false
-      #           while ((! Thread.current["result"]) && (all_size_configs.size > 0))
-      #             config_ary = all_size_configs.shift
-      #             puts "sm-trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
-      #             Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
-      #           end
-      #           puts "thread small DONE"
-      #         end
-      #       end
-      # 
-      #       # if we run out of threads || we get a result STOP
-      #       thread_ary_size = thread_ary.size
-      #       deleted_threads = []
-      #       until thread_ary_size <= 0 || result
-      #         sleep 0.01
-      #         thread_ary.each_with_index do |thr,i|
-      #           next if deleted_threads.include?(i)
-      # 
-      #           if ! thr.status
-      #             # puts "thread_ary.size was: #{thread_ary.size} vs. #{thread_ary_size}"
-      #             # thread_ary.delete(i) # BAD modifying loop-xxx... doesn't work
-      #             unless deleted_threads.include?(i)
-      #               thread_ary_size -= 1
-      #               deleted_threads << i
-      #               puts "deleted thread: #{i}"            
-      #             end
-      # 
-      #             if thr && thr["result"]
-      #               #got what we wanted
-      #               result = thr["result"]
-      #             end # if got result
-      #             
-      #             # puts "calling break..."
-      #             break
-      # puts "never here?!"
-      #           end # if thread done
-      # # puts "end of for-loop"
-      #         end # loop through threads
-      # # puts "end of while-loop"
-      #       end # while
-      # 
-      #       #kill all other threads
-      #       thread_ary.each {|thr| thr.kill }
-      #       ### END THREADED
+#             ### BGN THREADED
+#             all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
+#             thread_ary = []
+#             puts "lg-configs: #{all_size_configs_reverse.inspect}"
+#             
+#             thread_ary[thread_ary.size] = Thread.new do
+#               Thread.current["result"] = false
+#               while ((! Thread.current["result"]) && (all_size_configs_reverse.size > 0))
+#                 config_ary = all_size_configs_reverse.shift
+#                 puts "lg-trying config: #{config_ary.inspect}; #{all_size_configs_reverse.size} left"
+#                 Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)          
+#               end
+#               puts "thread large DONE"
+#             end
+#             
+#             if all_size_configs.size > 1
+#               all_size_configs = all_size_configs[0..-2]
+#               puts "sm-configs: #{all_size_configs.inspect}"
+#               
+#               thread_ary[thread_ary.size] = Thread.new do
+#                 Thread.current["result"] = false
+#                 while ((! Thread.current["result"]) && (all_size_configs.size > 0))
+#                   config_ary = all_size_configs.shift
+#                   puts "sm-trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+#                   Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
+#                 end
+#                 puts "thread small DONE"
+#               end
+#             end
+#       
+#             # if we run out of threads || we get a result STOP
+#             thread_ary_size = thread_ary.size
+#             deleted_threads = []
+#             until thread_ary_size <= 0 || result
+#               sleep 0.01
+#               thread_ary.each_with_index do |thr,i|
+#                 next if deleted_threads.include?(i)
+#       
+#                 if ! thr.status
+#                   # puts "thread_ary.size was: #{thread_ary.size} vs. #{thread_ary_size}"
+#                   # thread_ary.delete(i) # BAD modifying loop-xxx... doesn't work
+#                   unless deleted_threads.include?(i)
+#                     thread_ary_size -= 1
+#                     deleted_threads << i
+#                     puts "deleted thread: #{i}"            
+#                   end
+#       
+#                   if thr && thr["result"]
+#                     #got what we wanted
+#                     result = thr["result"]
+#                   end # if got result
+#                   
+#                   # puts "calling break..."
+#                   break
+#      # puts "never here?!"
+#                 end # if thread done
+#       # puts "end of for-loop"
+#               end # loop through threads
+#       # puts "end of while-loop"
+#             end # while
+#       
+#             #kill all other threads
+#             thread_ary.each {|thr| thr.kill }
+#             ### END THREADED
 
       @path = result
       puts "returning path: #{@path}\n"
@@ -586,17 +600,51 @@ all_size_configs = main_configs
 
     def calc_ideal_range(a_min,a_max)
       total_range = diff(a_min,a_max)
-      # ideal_range = (total_range / 2) + 2
+# return total_range # added to avoid breaking-up chunk -- not working for some maps!
+       ideal_range = (total_range / 2) + 2
       # 141 => 27 sec w/ ideal == 11; 6 => 3.6secs!
       
       # lvl 105 4 took longer than 2 (3 => 34.44sec is faster; 9 => 28.72sec)
       # lvl 141 ideal 16 => 52.010888 seconds; 6 => 3.5sec
       # lvl 142 ideal 16 => 357(ish) seconds; 9 => 327.488456; 8 => 193.461321; 4 => 25.313618; 2 => 8.154743
+# why 9 ?!?
+# starting level 104...
+# ideal_range: 3 (out of 54)
+# min: 18 - max: 32; total_range: 14
+# adding: 18:22
+# adding: 22:26
+# adding: 26:30
+# adding: 30:32
+# returning path: RRDDDRDDDRDRDRRRDDDRRRDDRDR
+# actually took 142.526393 seconds.
+#
+#starting level 105...
+#ideal_range: 3 (out of 54)
+#min: 18 - max: 32; total_range: 14
+#adding: 18:22
+#adding: 22:26
+#adding: 26:30
+#adding: 30:32
+#returning path: RDRRDDDRRDDDDDRDDRRRRRDRRRRDRRD
+#actually took 281.720983 seconds.
+#
       
-      ideal_range = map.width / total_range
+      ideal_range = if total_range / 9 >= 3
+                      9
+                    elsif total_range / 6 >= 3
+                      6
+                    elsif total_range / 3 >= 3
+                      3
+                    else
+                      2
+                    end
+      # map.width / total_range
+
+
+
       puts "divided #{ideal_range}-times evenly" if 0 == (map.width % total_range)
-      fbd = first_bomb_down(total_range, ideal_range)
-      ideal_range = (0 == (map.width % total_range)) ? ideal_range : fbd
+      #fbd = first_bomb_down(total_range, ideal_range)
+      #ideal_range = (0 == (map.width % total_range)) ? ideal_range : fbd
       puts "ideal_range: #{ideal_range} (out of #{map.width})"
       
       ideal_range

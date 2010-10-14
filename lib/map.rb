@@ -1,4 +1,7 @@
 require './lib/nil_extensions.rb'
+# test:
+#require 'rubygems'
+#require 'redis'
 class Map
   # BAD_CYCLE_LEN = 5
   @@solutions = './solutions.txt'
@@ -16,7 +19,13 @@ class Map
     # must call config from elsewhere!
     # config(options) if options && options != {}
     # @exit_r_and_d_counts = [] # e.g. [[5,7], [6,7], etc...]
+    #@redis = Redis.new
+#@map_cache = [] # store false paths
   end
+
+  #def clear_cache
+  #  @map_cache = []
+  #end
 
   #
   # NOTE: since these aren't optional, I shouldn't use an options hash
@@ -44,6 +53,7 @@ class Map
     clear_matrix
     #puts "map-config constructing matrix"
     construct_matrix
+    #@redis.flushdb
   end
 
   def clear_matrix
@@ -63,16 +73,16 @@ class Map
       matrix = Marshal.load(Marshal.dump(@matrix))
 
 #puts "mr#{row}:" + matrix[row]
-      #tmp = matrix[row].split(//)
-      #tmp[col] = (safe?(row,col)) ? Map.robot() : Map.boom
-      #matrix[row] = tmp.join
       matrix[row][col] = (matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
     else
       matrix = @matrix
     end
 
     puts "\n#-->"
-    matrix.each {|current_row| puts "#{current_row * ' '}"}
+    matrix.each do |current_row|
+      current_row.map!{|i| (i == 1) ? 'T' : '`' }
+      puts "#{current_row * ' '}"
+    end
     puts "#<--\n"
 
   rescue Exception => e
@@ -85,11 +95,11 @@ class Map
     next_cell = cell_generator
     row_bomb = {-1 => 0}
 
-    (0..@height).each do |y_val|
+    (0).upto(@height) do |y_val|
       final_row_bomb = nil
       prev_row_bomb = row_bomb[y_val -1] ||= @col_success
       matrix_row = []
-      (0 .. @width).each do |x_val|
+      (0).upto(@width) do |x_val|
         ascii_char = next_cell.call
         if final_row_bomb
           ascii_char = Map.bomb
@@ -99,9 +109,10 @@ class Map
           end
         end
         
-        # if ascii_char == Map.bomb
+         #if ascii_char == Map.bomb
         #   @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
-        # end
+    #@redis.set("#{y_val}_#{x_val}", 1)
+         #end
 
         matrix_row << ascii_char
       end # end-width
@@ -115,16 +126,17 @@ class Map
 
     # determine if a column has a "final" bomb...
     col_bomb = {-1 => 0}
-    (0 .. @width).each do |x_val|
+    (0).upto(@width) do |x_val|
       final_col_bomb = nil
       prev_col_bomb = col_bomb[x_val -1] ||= @row_success
-      (0 .. @height).each do |y_val|
+      (0).upto(@height) do |y_val|
         ascii_char = @matrix[y_val][x_val]
         if final_col_bomb
           # puts "COL: xxx"
           @matrix[y_val][x_val] = Map.bomb
           
           # @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
+    #@redis.set("#{y_val}_#{x_val}", 1)
           
         else
 
@@ -140,7 +152,7 @@ class Map
     fill_in_dead_ends false
 
     # exit_r_and_d_counts
-    
+  # @matrix.freeze   # does this work ?!
     #returns = []
     #@width.times{ returns << "\n" }
     #puts "constructed:\n#{@matrix.zip(returns)}"
@@ -152,19 +164,19 @@ class Map
   # TODO: DRY me up
   def exit_r_and_d_counts
     col = @width + 1
-    (0..@height).each do |row|
+    (0).upto(@height) do |row|
       @exit_r_and_d_counts << [row, col] if avail?(row,@width)
     end
     
     row = @height + 1
-    (0..@width).each do |col|
+    (0).upto(@width) do |col|
       @exit_r_and_d_counts << [row, col] if avail?(@height,col)
     end
     
   end
 
   def stringify_rows matrix
-    (0..(matrix.size-1)).each do |y_val|
+    (0).upto(matrix.size-1) do |y_val|
       matrix[y_val] = matrix[y_val].join
     end
     matrix
@@ -173,8 +185,8 @@ class Map
   # fill-in dead-ends in the matrix w/ bombs
   def fill_in_dead_ends reverse=false
     if reverse
-      (0..@height).each do |y_val|
-        (0..@width).each do |x_val|
+      (0).upto(@height) do |y_val|
+        (0).upto(@width) do |x_val|
           next if y_val == 0 || x_val == 0 || fail(y_val, x_val)
   
           if fail( *Map.reverse_move(Robot.down, y_val,x_val) ) && fail( *Map.reverse_move(Robot.right, y_val,x_val) )
@@ -182,14 +194,14 @@ class Map
             @matrix[y_val][x_val] = Map.bomb
             
               # @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
-            
+    #@redis.set("#{y_val}_#{x_val}", 1)
             
           end
         end
       end
     else
-      (0..@height).reverse_each do |y_val|
-        (0..@width).reverse_each do |x_val|
+      @height.downto(0) do |y_val|
+        @width.downto(0) do |x_val|
           next if y_val == @height || x_val == @width || fail(y_val, x_val)
   
           if fail( *Map.move(Robot.down, y_val,x_val) ) && fail( *Map.move(Robot.right, y_val,x_val) )
@@ -197,6 +209,7 @@ class Map
             @matrix[y_val][x_val] = Map.bomb
             
             # @bomb_hash["#{y_val}_#{x_val}"] = Map.bomb
+    #@redis.set("#{y_val}_#{x_val}", 1)
             
           end
         end
@@ -230,7 +243,10 @@ class Map
   #def array_fail(row,col)
   def fail(row,col)
     # @bomb_hash["#{row}_#{col}"] == Map.bomb
+    
     @matrix[row][col] == Map.bomb
+    #@redis.get(row + '_' + col)
+    #@redis.get("#{row}_#{col}")
   end
 
   #def fail(row,col)
@@ -276,9 +292,11 @@ class Map
   def avail?(row,col)
     # immediate_success(row,col) || safe?(row,col)
     #! unavail?(row,col)
-    @matrix[row][col] != Map.bomb
     # @bomb_hash["#{row}_#{col}"] != Map.bomb
     
+    @matrix[row][col] != Map.bomb
+    # ! @redis.get(row + '_' + col)
+    # ! @redis.get("#{row}_#{col}")
   end
   
   #def unavail?(row,col)
@@ -433,6 +451,7 @@ class Map
   # alias :verify :fast_verify
     
   def non_recursive_verify(path_ary=[], row=0, col=0)
+    #return false if @map_cache.include?(path_ary)
     # path_down, path_across = *[row, col]
     # reverse = path_ary.count(Robot.down) < path_ary.count(Robot.right)
     # success_check =  (ds > rs) ? lambda {|row| row > @height} : lambda {|col| col > @width}
@@ -441,7 +460,10 @@ class Map
       # path_ary.size.times do # is this useful ?so far no!?
       path_ary.each do |direction|
         row, col = Map.move(direction, row, col)
-        return false if fail(row,col)
+        if fail(row,col)
+          #@map_cache << path_ary # if caching on...
+          return false
+        end
       end # end-each
       # end
       return true if success(row,col) # faster to do this single check than multiple checks
