@@ -25,7 +25,6 @@ end
 alias end_time get_time
 
 start_time = get_time
-robot = Robot.new()
 
 def request(append='')
     host = 'www.hacker.org'
@@ -100,6 +99,8 @@ while true
     :level          => param_name[/FVlevel=(\d*)/,1].to_i
   }
   puts "\n\nusing: #{@params.map {|k,v| ":#{k} => \"#{v}\""}.join(', ')}...\n"
+  robot = Robot.new()
+  # GC.start
   robot.instruct(@params)
 
   path=robot.path

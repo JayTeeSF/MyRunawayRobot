@@ -36,8 +36,52 @@ class RobotRerun < Test::Unit::TestCase
     return config # apparently return(s) must be explicit from an ensure block...
   end
 
+  def test_10
+    try 10
+  end
+
+  def test_9
+    try 9
+  end
+
+  def test_8
+    try 8
+  end
+
+  def test_7
+    try 7
+  end
+
+  def test_6
+    try 6
+  end
+
+  def test_5
+    try 5
+  end
+
+  def test_4
+    try 4
+  end
+
+  def test_2
+    try 2
+  end
+
+  def test_3
+    try 3
+  end
+
+  def test_1
+    try 1
+  end
+
   def test_106
     try 106
+  end
+
+  def test_105
+    try 105
   end
 
   def test_104
@@ -46,10 +90,6 @@ class RobotRerun < Test::Unit::TestCase
 
   def test_140
     try 140
-  end
-
-  def test_141
-    try 141
   end
 
   def test_141
@@ -78,5 +118,6 @@ class RobotRerun < Test::Unit::TestCase
     puts "actually took #{actual_time_in_secs} seconds."
 
     assert( @path && !@path.empty?)
+    # GC.start
   end
 end
