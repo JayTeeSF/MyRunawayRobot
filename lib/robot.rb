@@ -1,3 +1,4 @@
+require './lib/array_extensions.rb'
 require './lib/map.rb' # for 1.9.2
 # require 'thread'  # For Mutex class in Ruby 1.8
 
@@ -25,10 +26,23 @@ class Robot
       @cache_off = options[:cache_off]
       @min = options[:ins_min]
       @max = options[:ins_max]
+
+      @pre_min = @min - 1
       clear_path
 
       @map.config(options)
+      @map.robot = self
       @map.draw_matrix(@start_x, @start_y)
+      
+      # true by default
+      @short_cut = options[:slow_cut] ? false : true
+      
+      if options[:ideal]
+        @ideal_range = options[:ideal].to_i
+      else
+        ideal_range
+        @ideal_range
+      end
       solve() if options[:only_config].nil?
     end
 
@@ -36,7 +50,6 @@ class Robot
       @map = Map.new params
       @debug = params[:debug]
       params.delete(:debug)
-      # movin_forward = true
       instruct(params) if params != {}
     end
 
@@ -61,19 +74,55 @@ class Robot
       @path = []
     end
 
+    #
+    # 1/4 => lvl105 (from 250ish): actually took 139.516 - 144 seconds.
+    # and even:
+    # returning path: RDRRDDDRRDDDDDRDDRRRRRDRRRRDRRD; took: 38.09
+    #   interesting, this trick only speeds-up the _final_ chunk
+    #   multi_t: actually took 111.13 seconds.
+    # 1/3 => actually took 157.138 seconds.
+    # switch d/r (see if it matters for _some_ levels)
+    #
+    def pick_directions
+      # 1 == rand(4) ? [Robot.down(), Robot.right()] : [Robot.right(), Robot.down()]
+      [Robot.down(), Robot.right()]
+    end
+
     def solve_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)
+      solution = false
       #      puts "\n#{current_path.inspect}"
       path_size = current_path.size
       if path_size > path_min #@min_size
-        if path_size > path_max # @max
-          return false
-        elsif map.verify(current_path, row, col)
-          puts "\tFound it (#{current_path.inspect})!\t"
-          return current_path
+        # puts "+"
+        if path_size > (path_max - 1)
+          if map.verify(current_path, row, col)
+            puts "\tFound it (#{current_path.inspect})!\t"
+            return current_path
+          else
+            if @short_cut
+            #   # store this if we're working on the _least_dense_/_min_ row
+              @start_from << [current_path, row, col]
+              if @start_from.size > 248460
+            #     puts "memory blow-ou"
+                @short_cut = false
+                @start_from = []
+              end
+            end
+
+            return nil # return nil to indicate that we exited w/ a "potentially" valid row
+            # problem ...the other returns, in this method need to propagate the 'nil' ...and not 'false'
+          end
+        else
+
+          # result = map.verify(current_path, row, col)
+          # return false if @short_cut && !result # nil
+          if result = map.verify(current_path, row, col)
+            puts "\tFound it (#{current_path.inspect})!\t"
+            return current_path
+          end
         end
       end
-
-
+      
       #      puts "d: r*#{row}/c#{col}"
       # if valid_try = try(Robot.down(), row, col, current_path)
       #   valid_try << path_min
@@ -82,18 +131,24 @@ class Robot
       #     return solution
       #   end
       # end
+      
+      # unless @cant_go.include?([row,col, Robot.down])
 
-      move = Map.move(Robot.down(), row, col)
-      if map.avail?(*move)
-        # puts "r-avail"
-        r, c = *move
-        sol_path = current_path.dup
-        sol_path << Robot.down()
+        # other_direction, direction = pick_directions # would like to calculate these ahead-of time
+        move = [row + 1, col] #Map.move(direction, row, col)
+        if map.avail?(*move)
+          # print direction == 1 ? "V" : ">"
+          # puts "d-avail"
+          r, c = *move
+          sol_path = current_path.dup
+          sol_path << Robot.down() #direction
 
-        if solution = solve_recursive(sol_path, r, c, path_min, path_max)
-          return solution
+          if solution = solve_recursive(sol_path, r, c, path_min, path_max)
+            return solution
+          end
         end
-      end
+      # end
+# print direction == 1 ? "^" : "<"
 
       #      puts "r: r#{row}/c*#{col}"
       # if valid_try = try(Robot.right(), row, col, current_path)
@@ -103,21 +158,26 @@ class Robot
       #     return solution
       #   end
       # end
+      
+      # unless @cant_go.include?([row,col, Robot.right])
 
-      move = Map.move(Robot.right(), row, col)
-      if map.avail?(*move)
-        # puts "r-avail"
-        r, c = *move
-        sol_path = current_path.dup
-        sol_path << Robot.right()
+        move = [row, col+1] # Map.move(other_direction, row, col)
+        if map.avail?(*move)
+          # print other_direction == 1 ? "V" : ">"
 
-        if solution = solve_recursive(sol_path, r, c, path_min, path_max)
-          return solution
+          # puts "od-avail"
+          r, c = *move
+          sol_path = current_path.dup
+          sol_path << Robot.right() #other_direction
+
+          if solution = solve_recursive(sol_path, r, c, path_min, path_max)
+            return solution
+          end
         end
-      end
+      # end
+# print other_direction == 1 ? "^" : "<"
 
-      #      puts "<--"
-      return false
+      return solution  # undo... don't want to re-verify
     end
 
     # def try(direction, row, col, current_path)
@@ -131,43 +191,187 @@ class Robot
     #   end
     # end
 
+
     def solve
       # GC.disable
 
       time_of = {}
       time_of[:begin] = Time.now
-      a_min= (@min - 1)
-      a_max=@max
-      main_configs = config( a_min, a_max, 1 + calc_ideal_range(a_min, a_max) )
+      main_configs = config( @min - 1, @max)
       result = false
-      all_size_configs = main_configs
 
-      #      # # last non-threaded-single-proc version:
-      #      # # robot_long_performance.rb: 
-      #      # # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
-      #      # puts "configs: #{all_size_configs.inspect}"
-      result = multi_t(time_of, result, all_size_configs)
+      # robot_long_performance.rb: 
+      # actually took 8.838757 seconds vs. expected 9.978728 seconds: 11.424011156532188% decrease.
+      # w/ random (weighted) right/down
+      # actually took 5.229 seconds vs. expected 9.978728 seconds: 47.5985315964119% decrease.
 
-      # MULTI goes here...
+      # result = multi_t(time_of, result, all_size_configs)
+      # result = multi_p(time_of, result, all_size_configs)
 
+      all_size_configs = main_configs.dup
+      result = single(time_of, result, all_size_configs)
+      
       @path = result
       time_of[:end] = Time.now
       puts "returning path: #{@path}; took: #{time_of[:end] - time_of[:begin]}\n"
       return result
     end
 
-    def regular(time_of, result, all_size_configs)
+    def trim_starts_and_create_restrictions
+      puts "num starts: #{@start_from.size}"
+      # need to cull this list!
+      # from each of these points, let's consider the constraints of the 1st move:
+      # if I go down 1-move, then how-many more down's must I go, til I can turn right?
+      # elsif I turn right 1-move, then how-many more right's must I go, til I can go down?
+      # if I can't do _either_ of those two things, from the current row/col ...
+      # then delete all entries from start_from that have that same constraint
+            
+      remove_from_start = []
+      r_c = []
+      @start_from.each do |start_ary|
+        # I _probably_ can't trim any start_from's
+        # however, I can avoid checking solutions that continue in a certain direction...
+        #@cant_go = [r,c, Robot.down]
+        # cant_go_count = 0
+        next if r_c.include?([start_ary[1], start_ary[2]])
+        
+        # if ! map.satisfy?(rtd_path,start_ary[1], start_ary[2])
+        #   cant_go_count += 1
+        # end
+        
+        # cant_go_count += 2
+        cant_go_down = ! bomb_down_options.any? do |path|
+          map.satisfy?(path,start_ary[1], start_ary[2])
+        end
+
+        cant_go_right = ! bomb_right_options.any? do |path|
+          map.satisfy?(path,start_ary[1], start_ary[2])
+        end
+
+        if cant_go_down
+          @cant_go << [start_ary[1], start_ary[2], Robot.down]
+        elsif cant_go_right
+          @cant_go << [start_ary[1], start_ary[2], Robot.right]
+        elsif cant_go_right && cant_go_down
+          # may not need this; should probably start from 0, everytime!
+          remove_from_start << [ start_ary[1], start_ary[2] ]
+        end
+        
+        r_c << [start_ary[1], start_ary[2]]
+      end
+      @cant_go.uniq!
+      puts "unique coords: #{r_c.inspect}; coords to remove: #{remove_from_start.inspect} restrictions: #{@cant_go.inspect}"
+      
+      # # cleanup
+      @start_from.reject!{ |e| remove_from_start.include?([e[1], e[2]]) }
+      puts "num starts, now: #{@start_from.size}"
+    end
+
+    # first_bomb_down
+    # going X from a cell is not valid, if one can't turn prior to going first_bomb_X moves
+    def bomb_down_options
+      @bdos ||= begin
+        bdos = []
+        bdo = []
+        (1).upto(map.first_bomb_down - 1) do |i|
+          i.times { bdo << Robot.down }
+          bdo << Robot.right
+          bdos << bdo
+        end
+
+        bdos
+      end
+    end
+
+    def bomb_right_options
+      @bros ||= begin
+        bros = []
+        bro = []
+        (1).upto(map.first_bomb_right - 1) do |i|
+          i.times { bro << Robot.right }
+          bro << Robot.down
+          bros << bro
+        end
+
+        bros
+      end
+    end
+
+    # def rtd_path
+    #   @rtd_path ||= begin
+    #     rtd = map.num_right_from_start
+    #     _rtd_path = []
+    #     rtd.times { _rtd_path << Robot.right }
+    #     _rtd_path << Robot.down
+    #   end
+    # end
+    # 
+    # def dtr_path
+    #   @dtr_path ||= begin
+    #     dtr = map.num_down_from_start
+    #     _dtr_path = []
+    #     dtr.times { _dtr_path << Robot.down }
+    #     _dtr_path << Robot.right
+    #   end
+    # end
+
+    def single(time_of, result, all_size_configs)
+      all_size_configs = all_size_configs.reverse
+      # shuffle!
       time_of[:prep_end] = Time.now
       i = 0
+      short_cut = @short_cut
+      @start_from = []
+      # @cant_go = [] # << [r, c, direction]
+      if short_cut
+        short_cut = true
+        # initialize @start_from
+        result = solve_recursive([], 0, 0, @min - 1, @min)
+        @short_cut = false # why?!
+      end
+      @start_from = [ [[], 0, 0] ] if @start_from.empty?
+      # trim_starts_and_create_restrictions if short_cut
+      
+      mid_starts = @start_from.mid_first[0..-3]
+    end_starts = [@start_from[0], @start_from[-1]].uniq
+      a = all_size_configs.dup
+      [mid_starts.mid_first, end_starts].each do |starts|
+        puts "."
+        all_size_configs = a
       while ((! result) && all_size_configs.size > 0)
         time_of[:"loop_#{i}_begin"] = Time.now
         config_ary = all_size_configs.shift
         print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
-        result = solve_recursive([], 0, 0, *config_ary)
-        # result = solve_non_recursive([], 0, 0, *config_ary)
+
+        # find a way to trim @start_from!
+        # can I detect when solve_recursive returns an invalid-path:
+        # e.g. it drops-out the back-door, as opposed to growing beyond max (i.e. config_ary[1] )
+        # no...
+        
+        # start_arys = @start_from.dup.mid_first
+        # @start_from = []
+        # start_arys.each do |start_ary|
+        starts.each do |start_ary|
+          break if result = solve_recursive(start_ary[0], start_ary[1], start_ary[2], *config_ary)
+        end
+
+        # unless result
+        #   unless @short_cut
+        #     @start_from = start_arys
+        # #     # @short_cut = short_cut # possibly re-try
+        # #   else
+        # #     @start_from = [ [[], 0, 0] ] if @start_from.empty?
+        # #     @cant_go = [] # << [r, c, direction]
+        # #     trim_starts_and_create_restrictions
+        #   end
+        # end
+      
         time_of[:"loop_#{i}_end"] = Time.now
         puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
+
         i += 1
+        end
+        break if result
       end
       result
     end
@@ -177,16 +381,21 @@ class Robot
       # all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
       large_configs = all_size_configs.dup.reverse
       small_configs = all_size_configs[0..-2].dup
-      
+
       thread_ary = []
       puts "lg-configs: #{large_configs.inspect}"
 
       thread_ary[thread_ary.size] = Thread.new do
         Thread.current["result"] = false
+        i = 0
         while ((! Thread.current["result"]) && (large_configs.size > 0))
+          time_of[:"loop_#{i}_begin"] = Time.now
           config_ary = large_configs.shift
-          puts "lg-trying config: #{config_ary.inspect}; #{large_configs.size} left"
-          Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)          
+          print "lg-trying config: #{config_ary.inspect}; #{large_configs.size} left"
+          Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
+          time_of[:"loop_#{i}_end"] = Time.now
+          puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
+          i += 1
         end
         puts "thread large DONE"
       end
@@ -197,10 +406,15 @@ class Robot
 
         thread_ary[thread_ary.size] = Thread.new do
           Thread.current["result"] = false
+          i = 0
           while ((! Thread.current["result"]) && (small_configs.size > 0))
+            time_of[:"loop_#{i}_begin"] = Time.now
             config_ary = small_configs.shift
-            puts "sm-trying config: #{config_ary.inspect}; #{small_configs.size} left"
+            print "sm-trying config: #{config_ary.inspect}; #{small_configs.size} left"
             Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
+            time_of[:"loop_#{i}_end"] = Time.now
+            puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
+            i += 1
           end
           puts "thread small DONE"
         end
@@ -210,7 +424,9 @@ class Robot
       thread_ary_size = thread_ary.size
       deleted_threads = []
       until thread_ary_size <= 0 || result
-        sleep 0.01  # is this too long/short ?!
+        sleep 0.005  # actually took 160.79 seconds. ...but I may be sleeping in wrong place!
+        # w sleep 0.001 => 157s <-- but load exceeds 2.0!
+        # w/o sleep 247s
         thread_ary.each_with_index do |thr,i|
           next if deleted_threads.include?(i)
 
@@ -245,14 +461,6 @@ class Robot
 
     def multi_p(time_of, result, all_size_configs)
       ### BGN MULTIPROCESS      
-      # if main_configs.first == main_configs.last
-      #   main_configs = [main_configs.first]
-      #   # all_size_configs_reverse = all_size_configs.dup.reverse
-      #   secondary_configs = main_configs.dup
-      # else
-      #   # all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
-      #   secondary_configs = main_configs[1..-1].dup
-      # end
       large_configs = all_size_configs.dup.reverse
       small_configs = all_size_configs[0..-2].dup
 
@@ -261,22 +469,13 @@ class Robot
 
       puts "all-configs: #{all_size_configs.inspect}"
 
-      # how-to associate rd/wr pipes w/ the different procs?
-      # how-to check each child-proc (and not confuse their pipes)
-
       # lg_rd, lg_wr = IO.pipe
       key = :lg_pid 
       pipes[key] = IO.pipe
       proc_hash[key] = fork {
         pipes[key].first.close
-        # result = false
-        # while ((! result) && (main_configs.size > 0))
-        #   config_ary = main_configs.shift
-        #   puts "lg-trying config: #{config_ary.inspect}; #{main_configs.size} left"
-        #   result = solve_recursive([], 0, 0,*config_ary)          
-        # end
 
-        if result = regular(time_of, result, large_configs)
+        if result = single(time_of, result, large_configs)
           pipes[key].last.write result 
         else
           pipes[key].last.write "false"
@@ -288,47 +487,14 @@ class Robot
 
 
       if small_configs.size >= 1
-        # # new hack to force 2nd-thread/process to try an alternate "path"
-        # a_min = @min - 1
-        # a_max = @max
-        # puts "ideal via previous hack"
-        # ideal_lens = []
-        # ideal_lens << 2
-        # ideal_lens << 3
-        # ideal_lens << previous_three_or_two_to_the_n( diff(a_min,a_max) )
-        # ideal_len2 = ideal_len
-        # while ideal_len == ideal_len2
-        #     ideal_len2 = ideal_lens.shift
-        # end
-        # puts "ideal: #{ideal_len2}"    
-        # secondary_configs = config( a_min, a_max, ideal_len2 )
-        # tmp = secondary_configs.shuffle
-        # secondary_configs = tmp
-        # # end new hack
 
         key = :sm_pid
         pipes[key] = IO.pipe
-        # final_range_min, final_range_max = *main_configs[-1]
-        # puts "final_range: #{final_range_min}:#{final_range_max}"
-        # final_range_chunks = config(final_range_min, final_range_max,ideal_len)
-        # 
-        # puts "final_range_chunks: #{final_range_chunks.inspect}"
-        # secondary_configs = secondary_configs[0..-2]
-        # secondary_configs << final_range_chunks # [@max - 1, @max]
         puts "sm-configs: #{small_configs.inspect}"
 
         proc_hash[key] = fork {
           pipes[key].first.close
-          # result = false
-          # while ((! result) && (secondary_configs.size > 0))
-          #   config_ary = secondary_configs.shift
-          #   puts "sm-trying config: #{config_ary.inspect}; #{secondary_configs.size} left"
-          #   result = solve_non_recursive([], 0, 0,*config_ary)         
-          #            
-          # end
-          # pipes[key].last.write result ? result : "false"
-
-          if result = regular(time_of, result, small_configs)
+          if result = single(time_of, result, small_configs)
             pipes[key].last.write result 
           else
             pipes[key].last.write "false"
@@ -378,11 +544,13 @@ class Robot
       result
     end
 
-    def config(a_min=(@min - 1),a_max=@max, ideal_range=nil)
-      ideal_range = calc_ideal_range(a_min,a_max) unless ideal_range
+    def config(a_min=(@min - 1),a_max=@max)
+puts "ideal_range: #{ideal_range} ( a_max(#{a_max}), a_min * 2(#{2 * a_min}) and a_max * 2(#{2 * a_max})) (out of #{map.width})"
+
       total_range = diff(a_min,a_max)
       puts "min: #{a_min} - max: #{a_max}; total_range: #{total_range}"
-      return [[a_min, a_max]] if total_range < 2 || ideal_range < 2 || total_range <= ideal_range
+      return [[a_min, a_max]] if total_range < 2 || total_range <= ideal_range
+       # || ideal_range < 2
 
       ranges = []
       r_min = a_min
@@ -420,75 +588,63 @@ class Robot
     # i'm wondering if I need some formula like - sides of triangle:
     # board size (hypotenuse); min/max (and/or range); chunk-size
 
-    def calc_ideal_range(a_min,a_max)
-      total_range = diff(a_min,a_max)
-      # return total_range # added to avoid breaking-up chunk -- not working for some maps!
-      ideal_range = (total_range / 2) + 2
-      # 141 => 27 sec w/ ideal == 11; 6 => 3.6secs!
+    def ideal_range(a_min=@pre_min,a_max=@max)
+      @ideal_range ||= begin
+        total_range = diff(a_min,a_max)
+        # return total_range # added to avoid breaking-up chunk -- not working for some maps!
+        ideal = (total_range / 2) + 2
+        # 141 => 27 sec w/ ideal == 11; 6 => 3.6secs!
+        # lvl 105 4 took longer than 2 (3 => 34.44sec is faster; 9 => 28.72sec)
+        # lvl 141 ideal 16 => 52.010888 seconds; 6 => 3.5sec
+        # lvl 142 ideal 16 => 357(ish) seconds; 9 => 327.488456; 8 => 193.461321; 4 => 25.313618; 2 => 8.154743
+        # starting level 104...
+        # ideal: 3 (out of 54)
+        # min: 18 - max: 32; total_range: 14
+        # adding: 18:22
+        # adding: 22:26
+        # adding: 26:30
+        # adding: 30:32
+        # returning path: RRDDDRDDDRDRDRRRDDDRRRDDRDR
+        # actually took 142.526393 seconds.
+        #
+        #starting level 105...
+        #ideal: 3 (out of 54)
+        #min: 18 - max: 32; total_range: 14
+        #adding: 18:22
+        #adding: 22:26
+        #adding: 26:30
+        #adding: 30:32
+        #returning path: RDRRDDDRRDDDDDRDDRRRRRDRRRRDRRD
+        #actually took 281.720983 seconds.
+        #
+        
+        ideal = if total_range / 9 >= 3
+          9
+        elsif total_range / 6 >= 3
+          6
+        elsif total_range / 3 >= 3
+          3
+        else
+          2
+        end
+        # map.width / total_range
+        puts "divided #{ideal}-times evenly" if 0 == (map.width % total_range)
 
-      # lvl 105 4 took longer than 2 (3 => 34.44sec is faster; 9 => 28.72sec)
-      # lvl 141 ideal 16 => 52.010888 seconds; 6 => 3.5sec
-      # lvl 142 ideal 16 => 357(ish) seconds; 9 => 327.488456; 8 => 193.461321; 4 => 25.313618; 2 => 8.154743
-      # why 9 ?!?
-      # starting level 104...
-      # ideal_range: 3 (out of 54)
-      # min: 18 - max: 32; total_range: 14
-      # adding: 18:22
-      # adding: 22:26
-      # adding: 26:30
-      # adding: 30:32
-      # returning path: RRDDDRDDDRDRDRRRDDDRRRDDRDR
-      # actually took 142.526393 seconds.
-      #
-      #starting level 105...
-      #ideal_range: 3 (out of 54)
-      #min: 18 - max: 32; total_range: 14
-      #adding: 18:22
-      #adding: 22:26
-      #adding: 26:30
-      #adding: 30:32
-      #returning path: RDRRDDDRRDDDDDRDDRRRRRDRRRRDRRD
-      #actually took 281.720983 seconds.
-      #
-
-      ideal_range = if total_range / 9 >= 3
-        9
-      elsif total_range / 6 >= 3
-        6
-      elsif total_range / 3 >= 3
-        3
-      else
-        2
+        double_min = 2 * a_min
+        puts "double_min: #{double_min}; max: #{a_max}"
+        
+        if double_min > a_max
+          puts "ok"
+          res = (2 + (double_min - a_max) + 1)
+          res / 2 # too big
+        else
+          puts "nok"
+          ideal
+        end
+        # puts "#{[map.num_down_from_start, map.num_right_from_start].inspect}"
+        # [map.num_down_from_start, map.num_right_from_start].max
+        # 3
+        # from any given point, what's the next point w/ the ?fewest? # of braches
       end
-      # map.width / total_range
-
-
-
-      puts "divided #{ideal_range}-times evenly" if 0 == (map.width % total_range)
-      #fbd = first_bomb_down(total_range, ideal_range)
-      #ideal_range = (0 == (map.width % total_range)) ? ideal_range : fbd
-      puts "ideal_range: #{ideal_range} (out of #{map.width})"
-
-      ideal_range
     end
   end
-
-__END__
-
-  # multiprocess may be better (easier)/more scalable: IO.pipe ?!
-  # cmd = "ruby -e '5.times {|i| p i}'"
-  # output = `#{cmd}` # how do we avoid blocking ?!
-  # puts output
-  # 0
-  # 1
-  # 2
-  # 3
-  # 4
-  # 
-  # self.map.matrix = [[1,2,3],[4,5,6],[7,8,9]]
-  # puts self.map.matrix.inspect # => [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-
-  # perhaps revert back to multi-process (guess best config-sizing):
-  # (randomly) choose another size (2/3 ?!) (going in reverse) for use w/ 2nd-thread
-
-

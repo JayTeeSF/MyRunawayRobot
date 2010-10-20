@@ -1,6 +1,19 @@
 require './lib/nil_extensions.rb'
 class Map
-  attr_accessor :height, :width 
+  attr_accessor :height, :width, :matrix, :robot
+
+  ANSI_RED      ="\033[0;31m"
+  ANSI_LRED      ="\033[1;31m"
+  ANSI_GRAY     = "\033[1;30m"
+  ANSI_LGRAY    = "\033[0;37m"
+  ANSI_BLUE     = "\033[0;34m"
+  ANSI_LBLUE    = "\033[1;34m"
+
+  ANSI_RESET      = "\033[0m"
+  ANSI_REVERSE    = "\033[7m"
+
+  ANSI_BACKBLACK  = "\033[40m"
+  ANSI_BACKRED    = "\033[41m"
 
   def initialize(options={})
     @debug = options[:debug]
@@ -20,8 +33,7 @@ class Map
     @height = options[:board_y] - 1
     @row_success = @height + 1
     @col_success = @width + 1
-    
-    clear_matrix
+
     construct_matrix
   end
 
@@ -36,18 +48,33 @@ class Map
   # human readable
   def draw_matrix(row=nil,col=nil)
     # return unless @debug
-    construct_matrix if @matrix.empty?
+    construct_matrix if matrix.empty?
     if (row && col)
       # deep copy the array, before inserting our robot
-      matrix = Marshal.load(Marshal.dump(@matrix))
-      matrix[row][col] = (matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
+      _matrix = Marshal.load(Marshal.dump(matrix))
+      _matrix[row][col] = (_matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
     else
-      matrix = @matrix
+      _matrix = matrix
     end
 
     puts "\n#-->"
-    matrix.each do |current_row|
-      current_row.map!{|i| (i == 1) ? 'T' : '`' }
+    _matrix.each_with_index do |current_row,i|
+      current_row.each_with_index do |e,j|
+        current_distance = i + j
+        if current_distance < robot.min
+          current_row[j] = (e == 1)  ?  '+' : "#{ANSI_LBLUE}.#{ANSI_RESET}"
+        elsif (current_distance % robot.max) == 0 && (current_distance % robot.min) == 0
+          current_row[j] = (e == 1)  ?  "#{ANSI_REVERSE}^#{ANSI_RESET}" : "#{ANSI_REVERSE}#{ANSI_LBLUE}`#{ANSI_RESET}"
+        elsif (current_distance % robot.min) == 0
+          current_row[j] = (e == 1)  ?  "#{ANSI_REVERSE}>#{ANSI_RESET}" : "#{ANSI_REVERSE}#{ANSI_LBLUE}`#{ANSI_RESET}"
+        elsif current_distance > robot.min && current_distance < robot.max
+          current_row[j] = (e == 1)  ?  '/' : "#{ANSI_BLUE}`#{ANSI_RESET}"
+        elsif (current_distance % robot.max) == 0
+          current_row[j] = (e == 1)  ?  "#{ANSI_REVERSE}<#{ANSI_RESET}" : "#{ANSI_REVERSE}#{ANSI_BLUE}`#{ANSI_RESET}"
+        else
+          current_row[j] = (e == 1)  ?  "+" : "#{ANSI_LGRAY}.#{ANSI_RESET}"
+        end
+      end
       puts "#{current_row * ' '}"
     end
     puts "#<--\n"
@@ -57,7 +84,7 @@ class Map
   end
 
   def construct_matrix
-    return unless @matrix.empty?
+    clear_matrix
     puts "constructing matrix..."
     next_cell = cell_generator
     row_bomb = {-1 => 0}
@@ -75,7 +102,7 @@ class Map
             row_bomb[y_val] = final_row_bomb = x_val
           end
         end
-        
+
         matrix_row << ascii_char
       end # end-width
 
@@ -111,7 +138,7 @@ class Map
       (0).upto(@height) do |y_val|
         (0).upto(@width) do |x_val|
           next if y_val == 0 || x_val == 0 || fail?(y_val, x_val)
-  
+
           if fail?( *Map.reverse_move(Robot.down, y_val,x_val) ) && fail?( *Map.reverse_move(Robot.right, y_val,x_val) )
             # puts "filling-in a dead-end"
             @matrix[y_val][x_val] = Map.bomb
@@ -119,12 +146,12 @@ class Map
         end
       end
     end
-    
+
     if :both == direction || :forward == direction# forward
       @height.downto(0) do |y_val|
         @width.downto(0) do |x_val|
           next if y_val == @height || x_val == @width || fail?(y_val, x_val)
-  
+
           if fail?( *Map.move(Robot.down, y_val,x_val) ) && fail?( *Map.move(Robot.right, y_val,x_val) )
             # puts "filling-in a dead-end"
             @matrix[y_val][x_val] = Map.bomb
@@ -132,7 +159,7 @@ class Map
         end
       end
     end
-    
+
   end
 
   #
@@ -144,7 +171,7 @@ class Map
     terrain_ary = @terrain.split(//)
     increment = 1
     i = -1
-    
+
     # using #'s instead of chars provides a decent speed-up:
     # actually took 7.633317 seconds vs. 8.838757 ...
     lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0").to_i }
@@ -155,9 +182,7 @@ class Map
   end
 
   def fail?(row,col)
-    @matrix[row][col] == Map.bomb
-#  rescue Exception => e
-#      return false # we exceeded a bound
+    1 == @matrix[row][col] # Map.bomb; have nil_extensions handle out-of-bound issues
   end
 
   def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
@@ -175,32 +200,97 @@ class Map
   end
 
   def avail?(row,col)
-    # @matrix[row][col] != Map.bomb
     ! fail?(row, col)
   end
   
-#  def non_recursive_verify(path_ary=[], row=0, col=0)
+  # def num_down_til_right(row, col)
+  #   count = 0
+  #   begin 
+  #     row += 1
+  #     count += 1
+  #     unless avail?(row,col)
+  #       count = 0
+  #       break
+  #     end
+  #   end until avail?(row, col + 1)
+  #   count
+  # end
+  # 
+  # def num_right_til_down(row, col)
+  #   count = 0
+  #   begin 
+  #     col += 1
+  #     count += 1
+  #     unless avail?(row,col)
+  #       count = 0
+  #       break
+  #     end
+  #   end until avail?(row + 1, col)
+  #   count
+  # end
+  # 
+  # def num_right_from_start
+  #   @nrtd ||= num_right_til_down(0,0)
+  # end
+  # 
+  # def num_down_from_start
+  #   @ndtr ||= num_down_til_right(0,0)
+  # end
+
+  def first_bomb_down
+    @fbd ||= down_til_bomb(0,0)
+  end
+  def first_bomb_right
+    @fbr ||= right_til_bomb(0,0)
+  end
+  
+  def down_til_bomb(row, col)
+    count = 0
+    begin 
+      row += 1
+      count += 1
+    end until fail?(row, col)
+    count
+  end  
+  
+  def right_til_bomb(row, col)
+    count = 0
+    begin 
+      col += 1
+      count += 1
+    end until fail?(row, col)
+    count
+  end  
+  
+  def satisfy?(path_ary=[], row=0, col=0)
+    path_ary.each do |direction|
+      row, col = Map.move(direction, row, col)
+      return false if fail?(row,col)
+    end # end-each
+    return true
+  end
+
+  #  def non_recursive_verify(path_ary=[], row=0, col=0)
   def verify(path_ary=[], row=0, col=0)
-#puts "verifying..."
+    #puts "verifying..."
+
     while true # begin
+      return true if success?(row,col) # faster to do this single check than multiple checks
       path_ary.each do |direction|
         row, col = Map.move(direction, row, col)
         return false if fail?(row,col)
       end # end-each
-      return true if success?(row,col) # faster to do this single check than multiple checks
     end # while true
   end
 
-# #  alias :verify :non_recursive_verify
-# #
-#   def recursive_verify(path_ary=[], row=0, col=0)
-#     path_ary.each do |direction|
-#       row, col = Map.move(direction, row, col)
-#       return false if fail?(row,col)
-#     end # end-each
-#     return true if success?(row,col) # faster to do this single check than multiple checks
-#     verify(path_ary, row, col)
-#   end
+  #   def recursive_verify(path_ary=[], row=0, col=0)
+  #     path_ary.each do |direction|
+  #       row, col = Map.move(direction, row, col)
+  #       return false if fail?(row,col)
+  #     end # end-each
+  #     return true if success?(row,col) # faster to do this single check than multiple checks
+  #     verify(path_ary, row, col)
+  #   end
 
   def self.success
     'S' #made it to the border (assuming we expand the matrix...)
