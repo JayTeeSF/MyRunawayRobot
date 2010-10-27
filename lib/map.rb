@@ -1,6 +1,10 @@
 require './lib/nil_extensions.rb'
+
+# for testing:
+#require 'rubygems'
+#require 'ruby-debug'
 class Map
-  attr_accessor :height, :width, :matrix, :robot
+  attr_accessor :height, :width, :matrix, :robot, :map_folds
 
   ANSI_RED      ="\033[0;31m"
   ANSI_LRED      ="\033[1;31m"
@@ -19,6 +23,7 @@ class Map
     @debug = options[:debug]
     options.delete(:debug)
     #puts "options: #{options.inspect}"
+    @map_folds = {}
   end
 
   #
@@ -34,7 +39,7 @@ class Map
     @row_success = @height + 1
     @col_success = @width + 1
 
-    construct_matrix
+    # construct_matrix
   end
 
   def clear_matrix
@@ -45,22 +50,37 @@ class Map
     'R'
   end
 
+  def map_dup(_matrix=@matrix)
+    Marshal.load(Marshal.dump(_matrix))
+  end
+
   # human readable
-  def draw_matrix(row=nil,col=nil)
+  def draw_matrix(_matrix=@matrix, row=nil,col=nil)
     # return unless @debug
-    construct_matrix if matrix.empty?
+    if _matrix.empty?
+      construct_matrix
+      _matrix = @matrix
+    end
     if (row && col)
       # deep copy the array, before inserting our robot
-      _matrix = Marshal.load(Marshal.dump(matrix))
-      _matrix[row][col] = (_matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
+      _this_matrix = map_dup
+      # puts "_this_m: #{_this_matrix.inspect}"
+      _this_matrix[row] ||= []
+      _this_matrix[row][col] = (_this_matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
+      # puts "_this_m: #{_this_matrix.inspect}"
     else
-      _matrix = matrix
+      _this_matrix = _matrix
     end
 
     puts "\n#-->"
-    _matrix.each_with_index do |current_row,i|
+    _this_matrix.each_with_index do |current_row,i|
       current_row.each_with_index do |e,j|
         current_distance = i + j
+        if "R" == e
+          current_row[j] =   "#{ANSI_RED}R#{ANSI_RESET}"
+          next
+        end
+
         if current_distance < robot.min
           current_row[j] = (e == 1)  ?  '+' : "#{ANSI_LBLUE}.#{ANSI_RESET}"
         elsif (current_distance % robot.max) == 0 && (current_distance % robot.min) == 0
@@ -79,8 +99,8 @@ class Map
     end
     puts "#<--\n"
 
-  rescue Exception => e
-    puts "Unable to display this matrix: #{e.message}"
+  # rescue Exception => e
+  #   puts "Unable to display this matrix: #{e.message}"
   end
 
   def construct_matrix
@@ -129,6 +149,44 @@ class Map
     end # end width-loop
 
     fill_in_dead_ends
+  end
+    
+  # 
+  # perhaps we can fold the map, so we only have to verify one-segment of path
+  # update one quadrant w/ the constraints of all others
+  # call this from Robot's init method, for the (min-) start-pts...
+  # 
+  def fold_map(r,c)
+    puts "folding..." # perhaps only once
+    @map_folds["#{r}_#{c}"] ||= begin
+      # perhaps we ought to shrink the folded matricies...
+      tmp_matrix = []; r.times {|i| tmp_matrix[i] = [] }
+
+      # ...start at c+c, r+r...
+      # start at c,r, because we've already tested upto that point...
+      (c+c).upto(@width) do |x_val|
+        (r+r).upto(@height) do |y_val|
+          current_distance = x_val + y_val
+          # # can't reach these...
+          # next if r > y_val
+          # next if c > x_val
+          
+          row = (y_val - 2 * r) # where are we relative to start
+          col = (x_val - 2 * c) # where are we relative to start
+          row = 0 == r ? 0 : row % ( r )
+          col = 0 == c ? 0 : col % ( c )
+          puts "min: #{robot.min} vs. current_d: #{current_distance}; r: #{r}; c: #{c};  y_val: #{y_val}, x_val: #{x_val}"
+          puts "row: #{row}/col: #{col}"
+
+          if Map.bomb == matrix[y_val][x_val] && row >= 0 && row <= @height && col >= 0 && col <= @width
+            tmp_matrix[row] ||= []
+            tmp_matrix[row][col] = Map.bomb
+            puts "new bomb"
+          end
+        end
+      end
+      tmp_matrix
+    end
   end
 
   # fill-in dead-ends in the matrix w/ bombs
@@ -181,8 +239,8 @@ class Map
     row > @height || col > @width
   end
 
-  def fail?(row,col)
-    1 == @matrix[row][col] # Map.bomb; have nil_extensions handle out-of-bound issues
+  def fail?(row,col, _matrix=@matrix)
+    1 == _matrix[row][col] # Map.bomb; have nil_extensions handle out-of-bound issues
   end
 
   def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
@@ -199,8 +257,8 @@ class Map
     [row,col]
   end
 
-  def avail?(row,col)
-    ! fail?(row, col)
+  def avail?(row,col, _matrix=@matrix)
+    ! fail?(row, col, _matrix)
   end
   
   # def num_down_til_right(row, col)
@@ -273,14 +331,25 @@ class Map
   #  def non_recursive_verify(path_ary=[], row=0, col=0)
   def verify(path_ary=[], row=0, col=0)
     #puts "verifying..."
-
-    while true # begin
-      return true if success?(row,col) # faster to do this single check than multiple checks
+    # draw = ! @map_folds["#{row}_#{col}"]
+    # _matrix = fold_map(path_ary.count(Robot.down),path_ary.count(Robot.right))
+    # draw_matrix(_matrix,row,col) if draw
+    _matrix = @map_folds["#{row}_#{col}"] || fold_map(path_ary.count(Robot.down),path_ary.count(Robot.right))
+      # @matrix
+    
+    #while true # begin
+      if success?(row,col) # faster to do this single check than multiple checks
+        return true
+      end
+      
       path_ary.each do |direction|
         row, col = Map.move(direction, row, col)
-        return false if fail?(row,col)
+        return false if fail?(row,col, _matrix)
       end # end-each
-    end # while true
+      
+      # if we made it through the folded matrix --even once, then we're good!
+      return success?(row,col) || avail?(row, col, _matrix)
+    #end # while true
   end
 
   #   def recursive_verify(path_ary=[], row=0, col=0)

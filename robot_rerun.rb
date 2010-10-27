@@ -1,8 +1,8 @@
 require 'test/unit'
-
 # require './lib/robot.rb' # for 1.9.2
 require 'lib/robot.rb' # for rbx
 
+# ruby /robot_rerun.rb -n test_98 -- 10
 class RobotRerun < Test::Unit::TestCase
 
   def setup
@@ -34,6 +34,14 @@ class RobotRerun < Test::Unit::TestCase
   ensure
     conf_file.close
     return config # apparently return(s) must be explicit from an ensure block...
+  end
+
+  def test_120
+    try 120
+  end
+
+  def test_136
+    try 136
   end
 
   def test_10
@@ -107,7 +115,9 @@ class RobotRerun < Test::Unit::TestCase
   end
 
   def try level
-    @robot = Robot.new @config[level].merge(:debug => false)
+    options = { :debug => false }
+    options[:ideal] = ARGV[0] if ARGV[0]
+    @robot = Robot.new @config[level].merge(options)
 
     puts "returning path - min: #{@config[level][:ins_min]} max: #{@config[level][:ins_max]}"
     puts "\n\nstarting level #{level}..."

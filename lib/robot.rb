@@ -32,7 +32,7 @@ class Robot
 
       @map.config(options)
       @map.robot = self
-      @map.draw_matrix(@start_x, @start_y)
+      @map.draw_matrix(@map.matrix,@start_x, @start_y)
       
       # true by default
       @short_cut = options[:slow_cut] ? false : true
@@ -217,7 +217,8 @@ class Robot
       return result
     end
 
-    def trim_starts_and_create_restrictions
+    # def trim_starts_and_create_restrictions
+    def fold_key_pts
       puts "num starts: #{@start_from.size}"
       # need to cull this list!
       # from each of these points, let's consider the constraints of the 1st move:
@@ -226,7 +227,7 @@ class Robot
       # if I can't do _either_ of those two things, from the current row/col ...
       # then delete all entries from start_from that have that same constraint
             
-      remove_from_start = []
+      # remove_from_start = []
       r_c = []
       @start_from.each do |start_ary|
         # I _probably_ can't trim any start_from's
@@ -234,37 +235,35 @@ class Robot
         #@cant_go = [r,c, Robot.down]
         # cant_go_count = 0
         next if r_c.include?([start_ary[1], start_ary[2]])
+        map.fold_map(start_ary[1],start_ary[2])
+        map.draw_matrix(map.map_folds["#{start_ary[1]}_#{start_ary[2]}"], start_ary[1], start_ary[2])
         
-        # if ! map.satisfy?(rtd_path,start_ary[1], start_ary[2])
-        #   cant_go_count += 1
+        
+        # cant_go_down = ! bomb_down_options.any? do |path|
+        #   map.satisfy?(path,start_ary[1], start_ary[2])
         # end
-        
-        # cant_go_count += 2
-        cant_go_down = ! bomb_down_options.any? do |path|
-          map.satisfy?(path,start_ary[1], start_ary[2])
-        end
-
-        cant_go_right = ! bomb_right_options.any? do |path|
-          map.satisfy?(path,start_ary[1], start_ary[2])
-        end
-
-        if cant_go_down
-          @cant_go << [start_ary[1], start_ary[2], Robot.down]
-        elsif cant_go_right
-          @cant_go << [start_ary[1], start_ary[2], Robot.right]
-        elsif cant_go_right && cant_go_down
-          # may not need this; should probably start from 0, everytime!
-          remove_from_start << [ start_ary[1], start_ary[2] ]
-        end
+        # 
+        # cant_go_right = ! bomb_right_options.any? do |path|
+        #   map.satisfy?(path,start_ary[1], start_ary[2])
+        # end
+        # 
+        # if cant_go_down
+        #   @cant_go << [start_ary[1], start_ary[2], Robot.down]
+        # elsif cant_go_right
+        #   @cant_go << [start_ary[1], start_ary[2], Robot.right]
+        # elsif cant_go_right && cant_go_down
+        #   # may not need this; should probably start from 0, everytime!
+        #   remove_from_start << [ start_ary[1], start_ary[2] ]
+        # end
         
         r_c << [start_ary[1], start_ary[2]]
       end
-      @cant_go.uniq!
-      puts "unique coords: #{r_c.inspect}; coords to remove: #{remove_from_start.inspect} restrictions: #{@cant_go.inspect}"
-      
+      # @cant_go.uniq!
+      # puts "unique coords: #{r_c.inspect}; coords to remove: #{remove_from_start.inspect} restrictions: #{@cant_go.inspect}"
+
       # # cleanup
-      @start_from.reject!{ |e| remove_from_start.include?([e[1], e[2]]) }
-      puts "num starts, now: #{@start_from.size}"
+      # @start_from.reject!{ |e| remove_from_start.include?([e[1], e[2]]) }
+      # puts "num starts, now: #{@start_from.size}"
     end
 
     # first_bomb_down
@@ -323,11 +322,16 @@ class Robot
       short_cut = @short_cut
       @start_from = []
       # @cant_go = [] # << [r, c, direction]
+      
+      # got it: fold the map, based-on 0..min
+      # only the cells that "show-through" are "valid"
+      # then run this initial loop, in order to generate @start_from!
       if short_cut
         short_cut = true
         # initialize @start_from
         result = solve_recursive([], 0, 0, @min - 1, @min)
         @short_cut = false # why?!
+        fold_key_pts
       end
       @start_from = [ [[], 0, 0] ] if @start_from.empty?
       # trim_starts_and_create_restrictions if short_cut
@@ -635,8 +639,10 @@ puts "ideal_range: #{ideal_range} ( a_max(#{a_max}), a_min * 2(#{2 * a_min}) and
         
         if double_min > a_max
           puts "ok"
-          res = (2 + (double_min - a_max) + 1)
-          res / 2 # too big
+          res = 2 + (double_min - a_max)
+          res += 1 # I dunno
+          res += 1 # I really don't know
+          # res / 2 # too big
         else
           puts "nok"
           ideal
