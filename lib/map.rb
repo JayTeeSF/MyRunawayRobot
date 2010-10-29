@@ -58,12 +58,15 @@ class Map
   def draw_matrix(_matrix=@matrix, row=nil,col=nil)
     # return unless @debug
     if _matrix.empty?
+      puts "empty matrix"
       construct_matrix
       _matrix = @matrix
     end
+    # puts "drawing: _matrix: #{_matrix.inspect}"
+    
     if (row && col)
       # deep copy the array, before inserting our robot
-      _this_matrix = map_dup
+      _this_matrix = map_dup(_matrix)
       # puts "_this_m: #{_this_matrix.inspect}"
       _this_matrix[row] ||= []
       _this_matrix[row][col] = (_this_matrix[row][col] == Map.safe()) ? Map.robot() : Map.boom
@@ -76,7 +79,13 @@ class Map
     _this_matrix.each_with_index do |current_row,i|
       current_row.each_with_index do |e,j|
         current_distance = i + j
-        if "R" == e
+        
+        if Map.boom() == e
+          current_row[j] =   "#{ANSI_RED}B#{ANSI_RESET}"
+          next
+        end
+        
+        if Map.robot() == e
           current_row[j] =   "#{ANSI_RED}R#{ANSI_RESET}"
           next
         end
@@ -150,41 +159,49 @@ class Map
 
     fill_in_dead_ends
   end
-    
+  
+  def coord_generator(r,c)
+    lambda {r += r; c += c; [r,c]}
+  end
+  
   # 
   # perhaps we can fold the map, so we only have to verify one-segment of path
   # update one quadrant w/ the constraints of all others
   # call this from Robot's init method, for the (min-) start-pts...
   # 
   def fold_map(r,c)
-    puts "folding..." # perhaps only once
+    # puts "folding..."
     @map_folds["#{r}_#{c}"] ||= begin
-      # perhaps we ought to shrink the folded matricies...
-      tmp_matrix = []; r.times {|i| tmp_matrix[i] = [] }
 
-      # ...start at c+c, r+r...
-      # start at c,r, because we've already tested upto that point...
-      (c+c).upto(@width) do |x_val|
-        (r+r).upto(@height) do |y_val|
-          current_distance = x_val + y_val
-          # # can't reach these...
-          # next if r > y_val
-          # next if c > x_val
-          
-          row = (y_val - 2 * r) # where are we relative to start
-          col = (x_val - 2 * c) # where are we relative to start
-          row = 0 == r ? 0 : row % ( r )
-          col = 0 == c ? 0 : col % ( c )
-          puts "min: #{robot.min} vs. current_d: #{current_distance}; r: #{r}; c: #{c};  y_val: #{y_val}, x_val: #{x_val}"
-          puts "row: #{row}/col: #{col}"
-
-          if Map.bomb == matrix[y_val][x_val] && row >= 0 && row <= @height && col >= 0 && col <= @width
-            tmp_matrix[row] ||= []
-            tmp_matrix[row][col] = Map.bomb
-            puts "new bomb"
-          end
+      next_coord = coord_generator(r,c)
+      # init:
+      tmp_matrix = []
+      (0).upto(c) do |c_val|
+        (0).upto(r) do |r_val|
+          tmp_matrix[r_val] ||= []
+          tmp_matrix[r_val][c_val] = Map.safe
         end
       end
+      # puts "\ninit-matrix: #{tmp_matrix.inspect}"
+
+      # keep generating next-coord
+      # then loop over tmp_matrix, and fill-in any bombs from big-matrix
+      # that exist at tmp_r + current_coord and tmp_c + current_coord
+      current_coord = [r,c]
+      begin
+        (0).upto(tmp_matrix.first.size - 1) do |c_val| # width
+          (0).upto(tmp_matrix.size - 1) do |r_val| # height
+
+            if Map.bomb == matrix[r_val + current_coord.first][c_val + current_coord.last]
+              tmp_matrix[r_val][c_val] = Map.bomb
+            end
+
+          end # end-height
+        end # end-width
+        current_coord = next_coord.call
+      end until success?(*current_coord)
+
+      # puts "matrix: #{tmp_matrix.inspect}"
       tmp_matrix
     end
   end
@@ -235,12 +252,12 @@ class Map
     lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0").to_i }
   end
 
-  def success?(row,col)
-    row > @height || col > @width
+  def success?(row,col,height=@height,width=@width)
+    row > height || col > width
   end
 
   def fail?(row,col, _matrix=@matrix)
-    1 == _matrix[row][col] # Map.bomb; have nil_extensions handle out-of-bound issues
+    Map.bomb == _matrix[row][col] #1; have nil_extensions handle out-of-bound issues
   end
 
   def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
@@ -259,107 +276,134 @@ class Map
 
   def avail?(row,col, _matrix=@matrix)
     ! fail?(row, col, _matrix)
-  end
-  
-  # def num_down_til_right(row, col)
+  end  
+
+  # def first_bomb_down
+  #   @fbd ||= down_til_bomb(0,0)
+  # end
+  # def first_bomb_right
+  #   @fbr ||= right_til_bomb(0,0)
+  # end
+  # 
+  # def down_til_bomb(row, col)
   #   count = 0
   #   begin 
   #     row += 1
   #     count += 1
-  #     unless avail?(row,col)
-  #       count = 0
-  #       break
-  #     end
-  #   end until avail?(row, col + 1)
+  #   end until fail?(row, col)
   #   count
-  # end
+  # end  
   # 
-  # def num_right_til_down(row, col)
+  # def right_til_bomb(row, col)
   #   count = 0
   #   begin 
   #     col += 1
   #     count += 1
-  #     unless avail?(row,col)
-  #       count = 0
-  #       break
-  #     end
-  #   end until avail?(row + 1, col)
+  #   end until fail?(row, col)
   #   count
+  # end  
+  # 
+  # def satisfy?(path_ary=[], row=0, col=0)
+  #   path_ary.each do |direction|
+  #     row, col = Map.move(direction, row, col)
+  #     return false if fail?(row,col)
+  #   end # end-each
+  #   return true
   # end
   # 
-  # def num_right_from_start
-  #   @nrtd ||= num_right_til_down(0,0)
+  # def full_verify(path_ary=[], row=0, col=0)
+  #   puts "good-chance of a winner: #{path_ary.inspect}; from 0,0"
+  #   while true # begin
+  #     path_ary.each do |direction|
+  #       row, col = Map.move(direction, row, col)
+  #       if fail?(row,col)
+  #         puts "hit a bomb in third/n-th pass-through"
+  #         return false
+  #       end
+  #     end # end-each
+  #     
+  #     if success?(row,col) # faster to do this single check than multiple checks
+  #       puts "made it!!!"
+  #       return true
+  #     end
+  #   end
   # end
-  # 
-  # def num_down_from_start
-  #   @ndtr ||= num_down_til_right(0,0)
-  # end
+  
+  #  def non_recursive_verify(path_ary=[], row=0, col=0)
+  def verify(path_ary=[], row=0, col=0)
+    # puts "#{row}(#{path_ary.count(Robot.down)}) /#{col}(#{path_ary.count(Robot.right)})"
+    # row = path_ary.count(Robot.down)
+    # col = path_ary.count(Robot.right)
+    # start_row, start_col = [row, col]
 
-  def first_bomb_down
-    @fbd ||= down_til_bomb(0,0)
+    # puts "verifying..."
+    draw = ! @map_folds["#{row}_#{col}"]
+    _matrix = fold_map(row,col)
+      
+      # draw_matrix(_matrix, row, col) if draw
+      row, col = [0,0]
+      # draw_matrix(_matrix, row, col) if draw
+
+    # unless _matrix.flatten.count(0) > 0
+    #   # puts "QUICK BOMB"
+    #   return false
+    # end
+    
+    # 
+    # #while true # begin
+    # if fail?(row,col, _matrix)
+    #   # puts "hit an immediate bomb!"
+    #   return false
+    # end
+    # 
+    #   if success?(row,col) # faster to do this single check than multiple checks
+    #     puts "ending before we start!"
+    #     return true
+    #   end
+    #   
+    2.times { # after folding this should be max!
+      path_ary.each do |direction|
+        if fail?(row,col, _matrix)
+          # puts "hit a bomb at start of first/second pass-through"
+          return false
+        end
+        
+        row, col = Map.move(direction, row, col)
+        # if fail?(row,col, _matrix)
+        #   # puts "hit a bomb in first/second pass-through"
+        #   return false
+        # end
+      end # end-each
+      
+      if success?(row,col, _matrix.first.size, _matrix.size) # faster to do this single check than multiple checks
+        return true
+      end
+      
+    }
+    
+    #   
+    #   # if we made it through the folded matrix --even once, then we're good!
+
+      # if fail?(row,col, _matrix)
+      #   # puts "hit a bomb at start of first/second pass-through"
+      #   return false
+      # end
+      
+      puts "recursive-verify!"
+      # return recursive_verify(path_ary, start_row, start_col)
+      return recursive_verify(path_ary, row, col)
+    #end # while true
   end
-  def first_bomb_right
-    @fbr ||= right_til_bomb(0,0)
-  end
-  
-  def down_til_bomb(row, col)
-    count = 0
-    begin 
-      row += 1
-      count += 1
-    end until fail?(row, col)
-    count
-  end  
-  
-  def right_til_bomb(row, col)
-    count = 0
-    begin 
-      col += 1
-      count += 1
-    end until fail?(row, col)
-    count
-  end  
-  
-  def satisfy?(path_ary=[], row=0, col=0)
+
+  def recursive_verify(path_ary=[], row=0, col=0)
+    return true if success?(row,col) # faster to do this single check than multiple checks
     path_ary.each do |direction|
       row, col = Map.move(direction, row, col)
       return false if fail?(row,col)
     end # end-each
-    return true
+    # return true if success?(row,col) # faster to do this single check than multiple checks
+    recursive_verify(path_ary, row, col)
   end
-
-  #  def non_recursive_verify(path_ary=[], row=0, col=0)
-  def verify(path_ary=[], row=0, col=0)
-    #puts "verifying..."
-    # draw = ! @map_folds["#{row}_#{col}"]
-    # _matrix = fold_map(path_ary.count(Robot.down),path_ary.count(Robot.right))
-    # draw_matrix(_matrix,row,col) if draw
-    _matrix = @map_folds["#{row}_#{col}"] || fold_map(path_ary.count(Robot.down),path_ary.count(Robot.right))
-      # @matrix
-    
-    #while true # begin
-      if success?(row,col) # faster to do this single check than multiple checks
-        return true
-      end
-      
-      path_ary.each do |direction|
-        row, col = Map.move(direction, row, col)
-        return false if fail?(row,col, _matrix)
-      end # end-each
-      
-      # if we made it through the folded matrix --even once, then we're good!
-      return success?(row,col) || avail?(row, col, _matrix)
-    #end # while true
-  end
-
-  #   def recursive_verify(path_ary=[], row=0, col=0)
-  #     path_ary.each do |direction|
-  #       row, col = Map.move(direction, row, col)
-  #       return false if fail?(row,col)
-  #     end # end-each
-  #     return true if success?(row,col) # faster to do this single check than multiple checks
-  #     verify(path_ary, row, col)
-  #   end
 
   def self.success
     'S' #made it to the border (assuming we expand the matrix...)
