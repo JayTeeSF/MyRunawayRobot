@@ -1,5 +1,5 @@
 
-rbx ==> Finished in 1684.290296 seconds. #<-- after adding folding (unfortunately jruby doesn't work...)
+rbx ==> Finished in 1684.290296 seconds. #<-- after adding folding (unfortunately jruby doesn't work...) ruby -Xjit.call_til_compile=4250 ./rerun...
 
 Finished in 2555.610818 seconds.
 
