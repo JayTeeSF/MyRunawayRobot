@@ -1,3 +1,6 @@
+
+rbx ==> Finished in 1684.290296 seconds. #<-- after adding folding (unfortunately jruby doesn't work...)
+
 Finished in 2555.610818 seconds.
 
 w/ no backup: Finished in 2609.371337 seconds.
@@ -22,3 +25,9 @@ Finished in 2431.211 seconds.
 
 # cmd: at Wed Oct 13 22:50:49 PDT 2010
 ruby --server --fast -J-Djruby.compile.fastest=true ./runaway.rb 
+
+# TRY:
+ruby --server --fast -J-Djruby.compile.fastest=true -J-Djruby.jit.threshold=100 -J-Djruby.jit.max=8192 ./robot_long_performance.rb
+ruby --server --fast -J-Djruby.compile.fastest=true -J-Djruby.jit.threshold=100 -J-Djruby.jit.max=8192 ./robot_rerun.rb -n test_105
+
+ruby --server --fast -J-Djruby.compile.fastest=true -J-Djruby.jit.threshold=100 -J-Djruby.jit.max=8192 ./runaway.rb
