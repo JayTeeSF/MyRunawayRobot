@@ -334,7 +334,7 @@ class Map
     # puts "#{row}(#{path_ary.count(Robot.down)}) /#{col}(#{path_ary.count(Robot.right)})"
     # row = path_ary.count(Robot.down)
     # col = path_ary.count(Robot.right)
-    # start_row, start_col = [row, col]
+    start_row, start_col = [row, col]
 
     # puts "verifying..."
     draw = ! @map_folds["#{row}_#{col}"]
@@ -375,9 +375,9 @@ class Map
         # end
       end # end-each
       
-      if success?(row,col, _matrix.first.size, _matrix.size) # faster to do this single check than multiple checks
-        return true
-      end
+      #if success?(row,col, _matrix.first.size, _matrix.size) # faster to do this single check than multiple checks
+      #  return true
+      #end
       
     }
     
@@ -390,8 +390,8 @@ class Map
       # end
       
       puts "recursive-verify!"
-      # return recursive_verify(path_ary, start_row, start_col)
-      return recursive_verify(path_ary, row, col)
+      return recursive_verify(path_ary, start_row, start_col)
+      #return recursive_verify(path_ary, row, col)
     #end # while true
   end
 

@@ -221,10 +221,11 @@ class Robot
       # w/ random (weighted) right/down
       # actually took 5.229 seconds vs. expected 9.978728 seconds: 47.5985315964119% decrease.
 
-      # result = multi_t(time_of, result, all_size_configs)
       # result = multi_p(time_of, result, all_size_configs)
 
       all_size_configs = main_configs.dup
+       #result = multi_t(time_of, result, all_size_configs)
+      # this just in... add code to fold, the folded matricies even further (if they're over a certain size (18 ?!))
       result = single(time_of, result, all_size_configs)
 
       @path = result
@@ -414,8 +415,11 @@ class Robot
     def multi_t(time_of, result, all_size_configs)
       ### BGN THREADED
       # all_size_configs_reverse = all_size_configs[1..-1].dup.reverse
-      large_configs = all_size_configs.dup.reverse
-      small_configs = all_size_configs[0..-2].dup
+      #large_configs = all_size_configs.dup.mid_first.uniq
+      #small_configs = all_size_configs[0..-2].dup
+      small_configs = [all_size_configs[0].dup, all_size_configs[-1].dup].uniq
+      large_configs = all_size_configs[1..-2].dup.mid_first.uniq
+      # [0..-2]
 
       thread_ary = []
       puts "lg-configs: #{large_configs.inspect}"
