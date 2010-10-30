@@ -36,10 +36,14 @@ class Map
     @terrain = options[:terrain_string]
     @width = options[:board_x] - 1
     @height = options[:board_y] - 1
-    @row_success = @height + 1
-    @col_success = @width + 1
+    # @row_success = @height + 1
+    #@col_success = @width + 1
 
     # construct_matrix
+  end
+
+  def fill_matrix
+    @matrix = construct_matrix
   end
 
   def clear_matrix
@@ -55,12 +59,15 @@ class Map
   end
 
   # human readable
-  def draw_matrix(_matrix=@matrix, row=nil,col=nil)
+  def draw_matrix(_matrix=nil, row=nil,col=nil)
     # return unless @debug
-    if _matrix.empty?
+    if _matrix.nil?
+      puts "nil matrix"
+      clear_matrix
+      _matrix = fill_matrix
+    elsif _matrix.empty? # someone else's matrix ?!
       puts "empty matrix"
-      construct_matrix
-      _matrix = @matrix
+      _matrix = construct_matrix( _matrix )
     end
     # puts "drawing: _matrix: #{_matrix.inspect}"
     
@@ -112,17 +119,15 @@ class Map
   #   puts "Unable to display this matrix: #{e.message}"
   end
 
-  def construct_matrix
-    clear_matrix
+  def construct_matrix(_matrix=@matrix, next_cell=cell_generator, _height=@height, _width=@width)
     puts "constructing matrix..."
-    next_cell = cell_generator
     row_bomb = {-1 => 0}
 
-    (0).upto(@height) do |y_val|
+    (0).upto(_height) do |y_val|
       final_row_bomb = nil
-      prev_row_bomb = row_bomb[y_val -1] ||= @col_success
+      prev_row_bomb = row_bomb[y_val -1] ||= _width + 1
       matrix_row = []
-      (0).upto(@width) do |x_val|
+      (0).upto(_width) do |x_val|
         ascii_char = next_cell.call
         if final_row_bomb
           ascii_char = Map.bomb
@@ -135,19 +140,19 @@ class Map
         matrix_row << ascii_char
       end # end-width
 
-      @matrix << matrix_row
+      _matrix << matrix_row
     end # end height
 
     # determine if a column has a "final" bomb...
     col_bomb = {-1 => 0}
-    (0).upto(@width) do |x_val|
+    (0).upto(_width) do |x_val|
       final_col_bomb = nil
-      prev_col_bomb = col_bomb[x_val -1] ||= @row_success
-      (0).upto(@height) do |y_val|
-        ascii_char = @matrix[y_val][x_val]
+      prev_col_bomb = col_bomb[x_val -1] ||= _height + 1
+      (0).upto(_height) do |y_val|
+        ascii_char = _matrix[y_val][x_val]
         if final_col_bomb
           # puts "COL: xxx"
-          @matrix[y_val][x_val] = Map.bomb
+          _matrix[y_val][x_val] = Map.bomb
         else
           if y_val >= (prev_col_bomb - 1) && Map.bomb == ascii_char
             col_bomb[x_val] = final_col_bomb = y_val
@@ -157,7 +162,9 @@ class Map
       end # end height-loop
     end # end width-loop
 
-    fill_in_dead_ends
+    _matrix = fill_in_dead_ends( _matrix )
+
+    _matrix
   end
   
   def coord_generator(r,c)
@@ -202,12 +209,14 @@ class Map
       end until success?(*current_coord)
 
       # puts "matrix: #{tmp_matrix.inspect}"
-      tmp_matrix
+      # TODO: wrap tmp_matrix inside a cell_generator, and call construct_matrix!!!
+      # tmp_matrix
+      construct_matrix( tmp_matrix, cell_generator( matrix_to_ary( tmp_matrix ) ), tmp_matrix.size - 1, tmp_matrix.first.size - 1 )
     end
   end
 
   # fill-in dead-ends in the matrix w/ bombs
-  def fill_in_dead_ends direction=:both
+  def fill_in_dead_ends _matrix=@matrix, direction=:both
 
     if :both == direction || :reverse == direction #reverse
       (0).upto(@height) do |y_val|
@@ -216,7 +225,7 @@ class Map
 
           if fail?( *Map.reverse_move(Robot.down, y_val,x_val) ) && fail?( *Map.reverse_move(Robot.right, y_val,x_val) )
             # puts "filling-in a dead-end"
-            @matrix[y_val][x_val] = Map.bomb
+            _matrix[y_val][x_val] = Map.bomb
           end
         end
       end
@@ -229,12 +238,23 @@ class Map
 
           if fail?( *Map.move(Robot.down, y_val,x_val) ) && fail?( *Map.move(Robot.right, y_val,x_val) )
             # puts "filling-in a dead-end"
-            @matrix[y_val][x_val] = Map.bomb
+            _matrix[y_val][x_val] = Map.bomb
           end
         end
       end
     end
 
+    _matrix
+  end
+
+  def matrix_to_ary( _matrix=@matrix )
+    [].tap do |ary|
+      _matrix.each do |row|
+        row.each do |element|
+          ary << element
+        end # col
+      end # row
+    end # tap
   end
 
   #
@@ -242,14 +262,14 @@ class Map
   # default: char-by-char
   # :terrain_string=>"..X...X.."
   #
-  def cell_generator
-    terrain_ary = @terrain.split(//)
+  def cell_generator( terrain_ary=@terrain.gsub(/X/,"1").gsub(/\./,"0").split(//) )
     increment = 1
     i = -1
 
     # using #'s instead of chars provides a decent speed-up:
     # actually took 7.633317 seconds vs. 8.838757 ...
-    lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0").to_i }
+    # lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0").to_i }
+    lambda { i += increment; terrain_ary[i].to_i }
   end
 
   def success?(row,col,height=@height,width=@width)
@@ -342,7 +362,7 @@ class Map
       
       # draw_matrix(_matrix, row, col) if draw
       row, col = [0,0]
-      # draw_matrix(_matrix, row, col) if draw
+      draw_matrix(_matrix, row, col) if draw
 
     # unless _matrix.flatten.count(0) > 0
     #   # puts "QUICK BOMB"

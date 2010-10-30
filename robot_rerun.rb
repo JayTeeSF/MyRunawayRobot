@@ -36,6 +36,10 @@ class RobotRerun < Test::Unit::TestCase
     return config # apparently return(s) must be explicit from an ensure block...
   end
 
+  def test_131
+    try 131
+  end
+
   def test_120
     try 120
   end
