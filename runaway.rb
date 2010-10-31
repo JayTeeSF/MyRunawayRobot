@@ -99,7 +99,7 @@ while true
     :level          => param_name[/FVlevel=(\d*)/,1].to_i
   }
   puts "\n\nusing: #{@params.map {|k,v| ":#{k} => \"#{v}\""}.join(', ')}...\n"
-  robot = Robot.new()
+  robot ||= Robot.new()
   # GC.start
   robot.instruct(@params)
 
