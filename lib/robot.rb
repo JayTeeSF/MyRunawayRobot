@@ -150,7 +150,7 @@ class Robot
         # if r.class != Fixnum
         #   puts "BOOOM-DOWN: row is: #{r.inspect}/#{r.class}"
         # end
-          
+
         sol_path = current_path.dup
         sol_path << Robot.down() #direction
 
@@ -182,7 +182,7 @@ class Robot
         # if r.class != Fixnum
         #   puts "BOOOM-RIGHT: row is: #{r.inspect}/#{r.class}"
         # end
-        
+
         sol_path = current_path.dup
         sol_path << Robot.right() #other_direction
 
@@ -224,7 +224,7 @@ class Robot
       # result = multi_p(time_of, result, all_size_configs)
 
       all_size_configs = main_configs.dup
-       #result = multi_t(time_of, result, all_size_configs)
+      #result = multi_t(time_of, result, all_size_configs)
       # this just in... add code to fold, the folded matricies even further (if they're over a certain size (18 ?!))
       result = single(time_of, result, all_size_configs)
 
@@ -372,42 +372,42 @@ class Robot
 
       # [mid_starts.mid_first, end_starts].each do |starts|
       # current_starts.each do |starts|
-        # puts "starts-count: #{starts.inspect}"
-        all_size_configs = a
-        while ((! result) && all_size_configs.size > 0)
-          time_of[:"loop_#{i}_begin"] = Time.now
-          config_ary = all_size_configs.shift
-          print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
+      # puts "starts-count: #{starts.inspect}"
+      all_size_configs = a
+      while ((! result) && all_size_configs.size > 0)
+        time_of[:"loop_#{i}_begin"] = Time.now
+        config_ary = all_size_configs.shift
+        print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
 
-          # find a way to trim @start_from!
-          # can I detect when solve_recursive returns an invalid-path:
-          # e.g. it drops-out the back-door, as opposed to growing beyond max (i.e. config_ary[1] )
-          # no...
+        # find a way to trim @start_from!
+        # can I detect when solve_recursive returns an invalid-path:
+        # e.g. it drops-out the back-door, as opposed to growing beyond max (i.e. config_ary[1] )
+        # no...
 
-          start_arys =  @start_from.mid_first.uniq.dup
-          @start_from = []
-         start_arys.each do |start_ary|
-            # puts "start_ary: #{start_ary.inspect}; #{start_ary[1]}"
-            break if result = solve_recursive(start_ary[0], start_ary[1], start_ary[2], *config_ary)
+        start_arys =  @start_from.mid_first.uniq.dup
+        @start_from = []
+        start_arys.each do |start_ary|
+          # puts "start_ary: #{start_ary.inspect}; #{start_ary[1]}"
+          break if result = solve_recursive(start_ary[0], start_ary[1], start_ary[2], *config_ary)
+        end
+
+        unless result
+          unless @short_cut
+            @start_from = start_arys
+            # #     # @short_cut = short_cut # possibly re-try
+          else
+            @start_from = [ [[], 0, 0] ] if @start_from.empty?
+            # #     @cant_go = [] # << [r, c, direction]
+            # #     trim_starts_and_create_restrictions
           end
+        end
 
-          unless result
-            unless @short_cut
-              @start_from = start_arys
-          # #     # @short_cut = short_cut # possibly re-try
-            else
-              @start_from = [ [[], 0, 0] ] if @start_from.empty?
-          # #     @cant_go = [] # << [r, c, direction]
-          # #     trim_starts_and_create_restrictions
-            end
-          end
+        time_of[:"loop_#{i}_end"] = Time.now
+        puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
 
-          time_of[:"loop_#{i}_end"] = Time.now
-          puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
-
-          i += 1
-        end # end while
-        # break if result
+        i += 1
+      end # end while
+      # break if result
       # end # - each do
       result
     end
@@ -630,62 +630,65 @@ class Robot
     def ideal_range(a_min=@pre_min,a_max=@max)
       @ideal_range ||= begin
         total_range = diff(a_min,a_max)
-        # return total_range # added to avoid breaking-up chunk -- not working for some maps!
-        ideal = (total_range / 2) + 2
-        # 141 => 27 sec w/ ideal == 11; 6 => 3.6secs!
-        # lvl 105 4 took longer than 2 (3 => 34.44sec is faster; 9 => 28.72sec)
-        # lvl 141 ideal 16 => 52.010888 seconds; 6 => 3.5sec
-        # lvl 142 ideal 16 => 357(ish) seconds; 9 => 327.488456; 8 => 193.461321; 4 => 25.313618; 2 => 8.154743
-        # starting level 104...
-        # ideal: 3 (out of 54)
-        # min: 18 - max: 32; total_range: 14
-        # adding: 18:22
-        # adding: 22:26
-        # adding: 26:30
-        # adding: 30:32
-        # returning path: RRDDDRDDDRDRDRRRDDDRRRDDRDR
-        # actually took 142.526393 seconds.
-        #
-        #starting level 105...
-        #ideal: 3 (out of 54)
-        #min: 18 - max: 32; total_range: 14
-        #adding: 18:22
-        #adding: 22:26
-        #adding: 26:30
-        #adding: 30:32
-        #returning path: RDRRDDDRRDDDDDRDDRRRRRDRRRRDRRD
-        #actually took 281.720983 seconds.
-        #
-
-        ideal = if total_range / 9 >= 3
-          9
-        elsif total_range / 6 >= 3
-          6
-        elsif total_range / 3 >= 3
-          3
-        else
-          2
-        end
-        # map.width / total_range
-        puts "divided #{ideal}-times evenly" if 0 == (map.width % total_range)
-
-        double_min = 2 * a_min
-        puts "double_min: #{double_min}; max: #{a_max}"
-
-        if double_min > a_max
-          puts "ok"
-          res = 2 + (double_min - a_max)
-          res += 1 # I dunno
-          res += 1 # I really don't know
-          # res / 2 # too big
-        else
-          puts "nok"
-          ideal
-        end
-        # puts "#{[map.num_down_from_start, map.num_right_from_start].inspect}"
-        # [map.num_down_from_start, map.num_right_from_start].max
-        # 3
-        # from any given point, what's the next point w/ the ?fewest? # of braches
+        ideal = (total_range - 2) / 3
+        ideal = ideal > 0 ? ideal : total_range
       end
     end
+
+    # # return total_range # added to avoid breaking-up chunk -- not working for some maps!
+    # ideal = (total_range / 2) + 2
+    # # 141 => 27 sec w/ ideal == 11; 6 => 3.6secs!
+    # # lvl 105 4 took longer than 2 (3 => 34.44sec is faster; 9 => 28.72sec)
+    # # lvl 141 ideal 16 => 52.010888 seconds; 6 => 3.5sec
+    # # lvl 142 ideal 16 => 357(ish) seconds; 9 => 327.488456; 8 => 193.461321; 4 => 25.313618; 2 => 8.154743
+    # # starting level 104...
+    # # ideal: 3 (out of 54)
+    # # min: 18 - max: 32; total_range: 14
+    # # adding: 18:22
+    # # adding: 22:26
+    # # adding: 26:30
+    # # adding: 30:32
+    # # returning path: RRDDDRDDDRDRDRRRDDDRRRDDRDR
+    # # actually took 142.526393 seconds.
+    # #
+    # #starting level 105...
+    # #ideal: 3 (out of 54)
+    # #min: 18 - max: 32; total_range: 14
+    # #adding: 18:22
+    # #adding: 22:26
+    # #adding: 26:30
+    # #adding: 30:32
+    # #returning path: RDRRDDDRRDDDDDRDDRRRRRDRRRRDRRD
+    # #actually took 281.720983 seconds.
+    # #
+    # 
+    # ideal = if total_range / 9 >= 3
+    #   9
+    # elsif total_range / 6 >= 3
+    #   6
+    # elsif total_range / 3 >= 3
+    #   3
+    # else
+    #   2
+    # end
+    # # map.width / total_range
+    # puts "divided #{ideal}-times evenly" if 0 == (map.width % total_range)
+    # 
+    # double_min = 2 * a_min
+    # puts "double_min: #{double_min}; max: #{a_max}"
+    # 
+    # if double_min > a_max
+    #   puts "ok"
+    #   res = 2 + (double_min - a_max)
+    #   res += 1 # I dunno
+    #   res += 1 # I really don't know
+    #   # res / 2 # too big
+    # else
+    #   puts "nok"
+    #   ideal
+    # end
+    # # puts "#{[map.num_down_from_start, map.num_right_from_start].inspect}"
+    # # [map.num_down_from_start, map.num_right_from_start].max
+    # # 3
+    # # from any given point, what's the next point w/ the ?fewest? # of braches
   end
