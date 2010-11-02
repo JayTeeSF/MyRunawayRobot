@@ -220,15 +220,14 @@ class Map
     end # end width-loop
 
     fill_in_dead_ends( _matrix )
-    # fill_in_dead_ends( fill_in_dead_ends( _matrix ) ) # go-back again ...does it help ?!
   end
 
   def coord_generator(row, col)
-    nr = row; nc = col
+    new_row = row; new_col = col
     lambda do
-      [nr, nc].tap do
-        nr += row
-        nc += col
+      [new_row, new_col].tap do
+        new_row += row
+        new_col += col
       end
     end
   end
@@ -293,31 +292,6 @@ class Map
       # puts "current_coord: #{current_coord.inspect}"
 
     end until success?(*current_coord) # success in one-direction is not sufficient ?!?
-    # && !one_more_time # testing @matrix, so _height and _width params not required
-    # while !success? || one_more_time
-
-    # puts "Extra..."
-    # 
-    #  if row == 5 && col == 8
-    # debugger
-    # end
-    # 
-    #     # need (upto) one more loop
-    #     (0).upto(_width) do |c_val| # width
-    #       big_matrix_col = c_val + current_coord.last
-    #       
-    #       (0).upto(_height) do |r_val| # height  
-    #         big_matrix_row = r_val + current_coord.first
-    # 
-    #         puts "\ntransposing: #{big_matrix_row}/#{big_matrix_col} (#{matrix[big_matrix_row][big_matrix_col]}) => #{r_val}/#{c_val}"
-    #         if Map.bomb == matrix[big_matrix_row][big_matrix_col]
-    #           puts " ..."
-    #           _matrix[r_val][c_val] = Map.bomb
-    #         end
-    #     
-    #       end # end-height
-    #     end # end-width
-
 
     return BM if Map.bm? _matrix
 
@@ -387,12 +361,9 @@ class Map
     _matrix = fold_map(row,col)
 
     if BM == _matrix
-      # puts "early escape BM"
-      # puts "-"
       return false
     end
 
-    # draw_matrix(_matrix, row, col) if draw
     row = col = 0
     draw_matrix(_matrix, row, col) if draw
 
@@ -423,20 +394,17 @@ class Map
 
   # this only operates on the _big_ matrix
   def recursive_verify(path_ary=[], row=0, col=0)
-    print "v"
+    # print "v"
     if success?(row,col) # faster to do this single check than multiple checks
-      # puts "draw success: #{path_ary.inspect}"
       draw_matrix(@matrix, row, col, path_ary)
       return true
     end
-    path_ary.each_with_index do |direction, i|
+    path_ary.each do |direction|
       if fail?(row, col)
-        puts "failed at: #{row}/#{col} w/ path_ary: #{path_ary.inspect}; #{i}: #{direction}"
         return false
       end
       row, col = Map.move(direction, row, col)
     end # end-each
-    # return true if success?(row,col) # faster to do this single check than multiple checks
     recursive_verify(path_ary, row, col)
   end
 
@@ -451,7 +419,6 @@ class Map
 
     # using #'s instead of chars provides a decent speed-up:
     # actually took 7.633317 seconds vs. 8.838757 ...
-    # lambda { i += increment; terrain_ary[i].sub(/X/,"1").sub(/\./,"0").to_i }
     lambda { i += increment; terrain_ary[i].to_i }
   end
 
@@ -563,15 +530,15 @@ class Map
   def self.valid_right_coords(_matrix)
     right_coords(_matrix).delete_if {|r,c| Map.fail?(r, c, _matrix)}
   end
-
+  
   def self.valid_bottom_coords(_matrix)
     bottom_coords(_matrix).delete_if {|r,c| Map.fail?(r, c, _matrix)}
   end
-
+  
   def self.right_coords(_matrix)
     _height = Map.height(_matrix)
     _width = Map.width(_matrix) 
-
+  
     col = _width
     [].tap do |coords|
       (0).upto(_height) do |row|
@@ -579,11 +546,11 @@ class Map
       end # rows
     end # tap
   end
-
+  
   def self.bottom_coords(_matrix)
     _height = Map.height(_matrix)
     _width = Map.width(_matrix) 
-
+  
     row = _height
     [].tap do |coords|
       (0).upto(_width) do |col|
@@ -616,32 +583,11 @@ class Map
     _matrix.first.size - 1
   end
 
-  # def self.bottom(_matrix)
-  #   _matrix.last
-  # end
-  # 
-  # # Top -(down-to)-> Bottom along RHS
-  # def self.right(_matrix)
-  #   [].tap do |side_ary|
-  #     _matrix.each do |row|
-  #       side_ary << row.last
-  #     end
-  #   end
-  # end
-
   def self.bm?(_matrix)
-    Map.bomb == _matrix[1][0] && Map.bomb == _matrix[0][1] ||
+    ( Map.bomb == _matrix[1][0] && Map.bomb == _matrix[0][1] ) ||
     Map.bomb == _matrix[0][0] ||
     Map.bomb == _matrix[height(_matrix)][width(_matrix)]
   end
-  # || right_and_bottom_all_equal(_matrix, Map.bomb)
-
-  # def self.right_and_bottom_all_equal(_matrix, target)
-  #   (right(_matrix) + bottom(_matrix)).uniq.all? do |value|
-  #     value == target
-  #   end
-  # end
-
 
   # def first_bomb_down
   #   @fbd ||= down_til_bomb(0,0)
@@ -667,30 +613,4 @@ class Map
   #   end until fail?(row, col)
   #   count
   # end  
-  # 
-  # def satisfy?(path_ary=[], row=0, col=0)
-  #   path_ary.each do |direction|
-  #     row, col = Map.move(direction, row, col)
-  #     return false if fail?(row,col)
-  #   end # end-each
-  #   return true
-  # end
-  # 
-  # def full_verify(path_ary=[], row=0, col=0)
-  #   puts "good-chance of a winner: #{path_ary.inspect}; from 0,0"
-  #   while true # begin
-  #     path_ary.each do |direction|
-  #       row, col = Map.move(direction, row, col)
-  #       if fail?(row,col)
-  #         puts "hit a bomb in third/n-th pass-through"
-  #         return false
-  #       end
-  #     end # end-each
-  #     
-  #     if success?(row,col) # faster to do this single check than multiple checks
-  #       puts "made it!!!"
-  #       return true
-  #     end
-  #   end
-  # end
 end

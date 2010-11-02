@@ -41,7 +41,6 @@ class Robot
         @ideal_range = options[:ideal].to_i
       else
         ideal_range
-        @ideal_range
       end
       solve() if options[:only_config].nil?
     end
@@ -213,7 +212,7 @@ class Robot
 
       time_of = {}
       time_of[:begin] = Time.now
-      main_configs = config( @min - 1, @max)
+      main_configs = config( @pre_min, @max)
       result = false
 
       # robot_long_performance.rb: 
@@ -358,7 +357,7 @@ class Robot
         # short_cut = true
         # short_cut = false
         # initialize @start_from
-        result = solve_recursive([], 0, 0, @min - 1, @min)
+        result = solve_recursive([], 0, 0, @pre_min, @min)
         # @short_cut = false # why?!
         # fold_key_pts
       end
@@ -583,7 +582,7 @@ class Robot
       result
     end
 
-    def config(a_min=(@min - 1),a_max=@max)
+    def config(a_min=@pre_min,a_max=@max)
       puts "ideal_range: #{ideal_range} ( a_max(#{a_max}), a_min * 2(#{2 * a_min}) and a_max * 2(#{2 * a_max})) (out of #{map.width})"
 
       total_range = diff(a_min,a_max)
@@ -628,11 +627,16 @@ class Robot
     # board size (hypotenuse); min/max (and/or range); chunk-size
 
     def ideal_range(a_min=@pre_min,a_max=@max)
-      @ideal_range ||= begin
-        total_range = diff(a_min,a_max)
-        ideal = (total_range - 2) / 3
-        ideal = ideal > 0 ? ideal : total_range
-      end
+      @ideal_range ||= ideal_range_generator(a_min, a_max)
+    end
+    
+    def ideal_range_generator(a_min, a_max)
+      total_range = diff(a_min,a_max)
+  # puts "\ntr: #{total_range}\n"
+      return total_range if a_max < 10
+      
+      ideal = (total_range - 2) / 3
+      return (ideal > 0) ? ideal : total_range
     end
 
     # # return total_range # added to avoid breaking-up chunk -- not working for some maps!

@@ -62,6 +62,7 @@ class RobotRerun < Test::Unit::TestCase
 
   def test_131
     try :level => 131, :expected_time_in_secs => 1378.578018
+    # actually took 1045.877586 seconds vs. expected 1378.578018 seconds: 24.133594737182285% decrease.
   end
 
   def test_120
@@ -112,12 +113,28 @@ class RobotRerun < Test::Unit::TestCase
     try :level => 3
   end
 
+  def banner(level)
+    print "==" * 3
+    print "level #{level}"
+    puts "==" * 3
+  end
+
+  def test_broken_folds
+    banner(26); test_26
+    banner(34); test_34
+    banner(45); test_45
+  end
+  
   def test_26
     try :level => 26
   end
 
   def test_34
     try :level => 34
+  end
+
+  def test_45
+    try :level => 45
   end
 
   def test_1
