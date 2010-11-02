@@ -1,8 +1,9 @@
 require './lib/nil_extensions.rb'
 
-# for testing:
-#require 'rubygems'
-#require 'ruby-debug'
+# for REE testing:
+# require 'rubygems'
+# require 'ruby-debug'
+
 class Map
   attr_accessor :height, :width, :matrix, :robot, :map_folds
 
@@ -87,7 +88,7 @@ class Map
 
     # deep-copy the array, before any (potential) modifications
     _this_matrix = Map.map_dup(_matrix)
-    
+
     if (row && col) # insert the Robot
       # puts "_this_m: #{_this_matrix.inspect}"
       _this_matrix[row] ||= []
@@ -100,7 +101,7 @@ class Map
       next unless current_row # probably need a way to capture the robot's extra-matric-steps :-o
       current_row.each_with_index do |e,j|
         current_distance = Map.distance(i, j)
-        
+
         if Map.boom() == e
           current_row[j] =   "#{ANSI_RED}B#{ANSI_RESET}"
           next
@@ -130,12 +131,12 @@ class Map
           end
         elsif (current_distance % robot.min) == 0
           if (e == 1)
-          color = ANSI_REVERSE
-          current_row[j] = '>' 
-        else
-          color = ANSI_REVERSE
-          current_row[j] = '`'
-        end
+            color = ANSI_REVERSE
+            current_row[j] = '>' 
+          else
+            color = ANSI_REVERSE
+            current_row[j] = '`'
+          end
         elsif current_distance > robot.min && current_distance < robot.max
           if (e == 1)
             current_row[j] = '/'
@@ -145,8 +146,8 @@ class Map
           end
         elsif (current_distance % robot.max) == 0
           if (e == 1)
-          color = ANSI_REVERSE
-          current_row[j] ='<'
+            color = ANSI_REVERSE
+            current_row[j] ='<'
           else 
             color = "#{ANSI_REVERSE}#{ANSI_BLUE}"
             current_row[j] ='`'
@@ -160,7 +161,7 @@ class Map
             color = ANSI_LGRAY
           end
         end
-        
+
         if coord_path.include?([i, j])
           color = ANSI_RED
         end
@@ -223,7 +224,13 @@ class Map
   end
 
   def coord_generator(row, col)
-    lambda {row += row; col += col; [row, col]}
+    nr = row; nc = col
+    lambda do
+      [nr, nc].tap do
+        nr += row
+        nc += col
+      end
+    end
   end
 
   # 
@@ -250,30 +257,67 @@ class Map
   end
 
   def generate_fold(row, col)
+    # puts "gen(#{row}/#{col})"
     next_coord = coord_generator(row, col)
     # init:
     _matrix = identity_matrix(row, col)
+    big_matrix = matrix.dup
     # puts "\ninit-matrix: #{_matrix.inspect}"
 
     # keep generating next-coord
     # then loop over _matrix, and fill-in any bombs from big-matrix
     # that exist at _r + current_coord and _c + current_coord
-    current_coord = [row, col]
     _height = Map.height(_matrix)
     _width = Map.width(_matrix) 
 
+    big_matrix_row = 0
+    big_matrix_col = 0
+    current_coord = [0, 0] # [row, col]
     begin
-      (0).upto(_width) do |c_val| # width
-        (0).upto(_height) do |r_val| # height
 
-          if Map.bomb == matrix[r_val + current_coord.first][c_val + current_coord.last]
+      (0).upto(_width) do |c_val| # width
+        big_matrix_col = c_val + current_coord.last
+
+        (0).upto(_height) do |r_val| # height
+          big_matrix_row = r_val + current_coord.first
+
+          # print "\ntransposing: #{big_matrix_row}/#{big_matrix_col} (#{matrix[big_matrix_row][big_matrix_col]}) => #{r_val}/#{c_val}"
+          if Map.bomb == big_matrix[big_matrix_row][big_matrix_col]
+            # puts " ..."
             _matrix[r_val][c_val] = Map.bomb
           end
 
         end # end-height
       end # end-width
-      current_coord = next_coord.call
-    end until success?(*current_coord) # testing @matrix, so _height and _width params not required
+      current_coord = next_coord.call # += r, c
+      # puts "current_coord: #{current_coord.inspect}"
+
+    end until success?(*current_coord) # success in one-direction is not sufficient ?!?
+    # && !one_more_time # testing @matrix, so _height and _width params not required
+    # while !success? || one_more_time
+
+    # puts "Extra..."
+    # 
+    #  if row == 5 && col == 8
+    # debugger
+    # end
+    # 
+    #     # need (upto) one more loop
+    #     (0).upto(_width) do |c_val| # width
+    #       big_matrix_col = c_val + current_coord.last
+    #       
+    #       (0).upto(_height) do |r_val| # height  
+    #         big_matrix_row = r_val + current_coord.first
+    # 
+    #         puts "\ntransposing: #{big_matrix_row}/#{big_matrix_col} (#{matrix[big_matrix_row][big_matrix_col]}) => #{r_val}/#{c_val}"
+    #         if Map.bomb == matrix[big_matrix_row][big_matrix_col]
+    #           puts " ..."
+    #           _matrix[r_val][c_val] = Map.bomb
+    #         end
+    #     
+    #       end # end-height
+    #     end # end-width
+
 
     return BM if Map.bm? _matrix
 
@@ -336,10 +380,7 @@ class Map
 
   #  def non_recursive_verify(path_ary=[], row=0, col=0)
   def verify(path_ary=[], row=0, col=0)
-    # puts "#{row}(#{path_ary.count(Robot.down)}) /#{col}(#{path_ary.count(Robot.right)})"
-    # row = path_ary.count(Robot.down)
-    # col = path_ary.count(Robot.right)
-    start_row, start_col = [row, col]
+    start_row = row; start_col = col
 
     # puts "verifying..."
     draw = ! @map_folds["#{row}_#{col}"]
@@ -352,7 +393,7 @@ class Map
     end
 
     # draw_matrix(_matrix, row, col) if draw
-    row, col = [0, 0]
+    row = col = 0
     draw_matrix(_matrix, row, col) if draw
 
     if Map.fail?(row, col, _matrix)
@@ -375,21 +416,25 @@ class Map
 
     #   # if we made it through the folded matrix --then we're good!
     # puts "recursive-verify!"
-    puts "!"
-    # ": #{path_ary.inspect}"
+    puts "!: #{start_row}/#{start_col}"
+    #: #{path_ary.inspect}"
     return recursive_verify(path_ary, start_row, start_col)
   end
 
   # this only operates on the _big_ matrix
   def recursive_verify(path_ary=[], row=0, col=0)
+    print "v"
     if success?(row,col) # faster to do this single check than multiple checks
       # puts "draw success: #{path_ary.inspect}"
       draw_matrix(@matrix, row, col, path_ary)
       return true
     end
-    path_ary.each do |direction|
+    path_ary.each_with_index do |direction, i|
+      if fail?(row, col)
+        puts "failed at: #{row}/#{col} w/ path_ary: #{path_ary.inspect}; #{i}: #{direction}"
+        return false
+      end
       row, col = Map.move(direction, row, col)
-      return false if fail?(row, col)
     end # end-each
     # return true if success?(row,col) # faster to do this single check than multiple checks
     recursive_verify(path_ary, row, col)
@@ -429,7 +474,7 @@ class Map
   def self.fail?(row, col, _matrix)
     Map.bomb == _matrix[row][col] #1; have nil_extensions handle out-of-bound issues
   end
-  
+
   def self.mark_invalid_spots _matrix, _height=nil, _width=nil
     _height ||= Map.height(_matrix)
     _width ||= Map.width(_matrix) 
@@ -585,9 +630,9 @@ class Map
   # end
 
   def self.bm?(_matrix)
-     Map.bomb == _matrix[1][0] && Map.bomb == _matrix[0][1] ||
-     Map.bomb == _matrix[0][0] ||
-     Map.bomb == _matrix[height(_matrix)][width(_matrix)]
+    Map.bomb == _matrix[1][0] && Map.bomb == _matrix[0][1] ||
+    Map.bomb == _matrix[0][0] ||
+    Map.bomb == _matrix[height(_matrix)][width(_matrix)]
   end
   # || right_and_bottom_all_equal(_matrix, Map.bomb)
 

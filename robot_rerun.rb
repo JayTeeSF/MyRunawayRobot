@@ -112,6 +112,14 @@ class RobotRerun < Test::Unit::TestCase
     try :level => 3
   end
 
+  def test_26
+    try :level => 26
+  end
+
+  def test_34
+    try :level => 34
+  end
+
   def test_1
     try :level => 1
   end
