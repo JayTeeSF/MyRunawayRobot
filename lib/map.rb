@@ -28,7 +28,7 @@ class Map
     @debug = options[:debug]
     options.delete(:debug)
     #puts "options: #{options.inspect}"
-    @map_folds = {}
+    @map_folds = [] # it would be nice to maintain this
   end
 
   #
@@ -228,7 +228,7 @@ class Map
       [new_row, new_col].tap do
         new_row += row
         new_col += col
-      end
+      end # end-tap
     end
   end
 
@@ -239,7 +239,8 @@ class Map
   # 
   def fold_map(row, col)
     # puts "folding..."
-    @map_folds["#{row}_#{col}"] ||= generate_fold(row, col)
+    # @map_folds["#{row}_#{col}"] ||= generate_fold(row, col)
+    @map_folds[row][col] ||= generate_fold(row, col)
   end
 
   def identity_matrix(_height, _width)
@@ -352,12 +353,82 @@ class Map
     _matrix
   end
 
+  def two_sided_verify(path_ary=[], row=0, col=0, _matrix = @matrix)
+    # return recursive_verify(path_ary, row, col)  575 seconds
+
+    # vs. 275 seconds:
+    draw = false
+    start_row = row; start_col = col
+
+    row = col = 0
+    draw_matrix(_matrix, row, col) if draw
+
+    _height = Map.height(_matrix)
+    _width = Map.width(_matrix)
+
+    # come from far-side of map
+    down_chunk = (_height / start_row)
+    right_chunk = (_width / start_col)
+
+    hp_row = down_chunk * start_row
+    hp_col = right_chunk * start_col
+    if Map.fail?(row, col, _matrix) || Map.fail?(hp_row, hp_col, _matrix)
+      # puts "hit a bomb at start of first/second pass-through"
+      return false
+    end
+
+    # confirm final chunk leads to success
+    begin 
+      path_ary.each do |direction|
+        hp_row, hp_col = Map.move(direction, hp_row, hp_col)
+        if Map.fail?(hp_row, hp_col, _matrix)
+          # puts "hit a bomb near end of matrix"
+          return false
+        end
+      end
+    end until hp_row > _height || hp_col > _width
+
+    # merging these two took: 288 vs. 255 doing fold_verify by itself
+    return fold_verify(path_ary, start_row, start_col)
+
+  # do the work...
+    # down_chunk = (_height / start_row)
+    # right_chunk = (_width / start_col)
+    # while ! Map.success?(row, col, _height, _width)
+    #   down_chunk -= 1; hp_row = down_chunk * start_row
+    #   right_chunk -= 1; hp_col = right_chunk * start_col
+    # 
+    #   path_ary.each do |direction|
+    #     row, col = Map.move(direction, row, col)
+    #     hp_row, hp_col = Map.move(direction, hp_row, hp_col)
+    # 
+    #     if Map.fail?(row, col, _matrix) || Map.fail?(hp_row, hp_col, _matrix)
+    #       # puts "hit a bomb at start of first/second pass-through"
+    #       return false
+    #     end
+    #   end # end-each
+    # 
+    #   break if hp_row <= row && hp_col <= col  # meet in the middle
+    # end
+
+    # # puts "recursive-verify!"
+    # puts "!: #{start_row}/#{start_col}"
+    # #: #{path_ary.inspect}"
+    # return recursive_verify(path_ary, start_row, start_col)
+  end
+
+  def plain_verify(path_ary=[], row=0, col=0, _matrix = @matrix)
+    return recursive_verify(path_ary, row, col)
+  end
+
   #  def non_recursive_verify(path_ary=[], row=0, col=0)
+  # def fold_verify(path_ary=[], row=0, col=0)
   def verify(path_ary=[], row=0, col=0)
     start_row = row; start_col = col
 
     # puts "verifying..."
-    draw = ! @map_folds["#{row}_#{col}"]
+    @map_folds[row] ||= [] # switching to a multi-dim array dropped time from 255 = 162 secs!
+    draw = ! @map_folds[row][col] # is there a more efficient-key?
     _matrix = fold_map(row,col)
 
     if BM == _matrix
@@ -382,7 +453,7 @@ class Map
           return false
         end
       end # end-each
-      puts "p"
+      # puts "p"
     end
 
     #   # if we made it through the folded matrix --then we're good!
