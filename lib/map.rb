@@ -519,6 +519,36 @@ class Map
 
     mark_invalid_bottom_spots(mark_invalid_right_spots( map_dup(_matrix), _height, _width ), _height, _width )
   end
+  
+  # return the safe? spots in a given distance-range
+  def self.safe_coords _matrix, _min_distance, _max_distance, _height=nil, _width=nil
+    _height ||= Map.height(_matrix)
+    _width ||= Map.width(_matrix)
+    
+    [].tap do |safe_coords|
+      Map.coords_in_a_range(_matrix, _min_distance, _max_distance, _height=nil, _width=nil).each do |row, col|
+        safe_coords << [row, col] unless Map.fail?(row, col, _matrix)
+      end
+    end
+  end
+
+  # return the spots in a given distance-range
+  def self.coords_in_a_range _matrix, _min_distance, _max_distance, _height=nil, _width=nil
+    _height ||= Map.height(_matrix)
+    _width ||= Map.width(_matrix)
+    
+    ary = []
+    _matrix.each_with_index do |current_row,i|
+      next unless current_row # probably need a way to capture the robot's extra-matric-steps :-o
+      current_row.each_with_index do |e,j|
+        current_distance = Map.distance(i, j)
+        next unless current_distance >= _min_distance && current_distance <= _max_distance
+        ary << [i, j]
+      end # current-row's col(s)
+    end # matrix-rows
+
+    ary
+  end
 
   def self.mark_invalid_right_spots _matrix, _height=nil, _width=nil
     _height ||= Map.height(_matrix)
