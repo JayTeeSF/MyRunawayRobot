@@ -4,7 +4,7 @@ require './lib/map.rb' # for 1.9.2
 
 class Robot
   attr_accessor :map, :path, :min, :max, :debug
-# :jump_from, 
+  # :jump_from, 
   #
   # this method gives the robots its marching orders
   # by default it will trigger the robot to "solve" the puzzle
@@ -31,7 +31,7 @@ class Robot
     @short_cut = options[:slow_cut] ? false : true
 
     # Should really be a mini-Matrix (should extract matrix from Map class)
-    # @jump_from = []; @jump_from[0] = []
+    @jump_from = []; @jump_from[0] = []
     if options[:ideal]
       @ideal_range = options[:ideal].to_i
     else
@@ -68,17 +68,180 @@ class Robot
     @path = []
   end
 
-  def solve_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max) #, jump_row=0, jump_col=0)
-    solution = false
-    #      puts "\n#{current_path.inspect}"
+  # BEGIN non-recursive
+  def dir_to_num(direction)
+    Robot.down() == direction ? 0 : 1
+  end
+
+  def direction(idx)
+    (0 == idx) ? Robot.down() : Robot.right()
+  end
+
+  def solve_non_recursive(current_path=[], row=0, col=0, path_min=@min_size,path_max=@max)
+    dir_idx = current_path.last ? dir_to_num(current_path.last) : 0
     path_size = current_path.size
+    start_path = current_path.dup
+    start_path_size = path_size
+    while path_size >= start_path_size
+      if path_size > path_min
+        if path_size > path_max
+          # current_path, row, col = backup(current_path)
+          current_path = backup(current_path)
+          row = current_path.count(Robot.down())
+          path_size = current_path.size
+          return false if path_size < start_path_size
+          col = current_path.size - row
+
+          dir_idx = 1
+        elsif map.verify(current_path, row, col)
+          puts "Found it (#{current_path.inspect})!"
+          return current_path
+        end
+      end
+
+      move = Map.move(direction(dir_idx),row,col)  # this could be down/right!!!
+      avail = map.avail?(*move)
+      if ! avail && 0 == dir_idx
+        dir_idx = 1
+        move = Map.move(Robot.right(), row, col)
+        avail = map.avail?(*move)
+      end
+
+      if avail
+        current_path << direction(dir_idx)
+        path_size += 1
+        row, col = move
+        dir_idx = 0
+      else
+        # current_path, row, col = backup(current_path)
+        # path_size = current_path.size
+        current_path = backup(current_path)
+        row = current_path.count(Robot.down())
+        path_size = current_path.size
+        # return false if 0 == path_size
+        return false if path_size < start_path_size        
+        col = current_path.size - row
+
+        dir_idx = 1
+      end #end if-avail
+
+    end # while
+  end # solve_non_rec
+
+  def backup(current_path)
+    while current_path.pop == Robot.right()
+    end # while
+    current_path #, current_path.count(Robot.down), current_path.count(Robot.right)]
+  end
+  # END non-recursive
+
+  def find_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max, path_size=current_path.size)
+    solution = false
     if path_size > path_min #@min_size
-      # if @short_cut
-      #   # store this if we're working on the _least_dense_/_min_ row
-      #   @jump_from[row] ||= []; @jump_from[row][col] ||= []
-      #   @jump_from[row][col] << current_path
+      # unless map.fold_map(row,col) == Map::BM
+        @jump_from[row] ||= []; @jump_from[row][col] ||= []
+        @jump_from[row][col] << current_path
+        # @jump_from[row][col].uniq!
       # end
       
+      return nil if path_size > (path_max - 1)
+    end
+
+    move = Map.move(Robot.down(), row, col)
+    if map.avail?(*move)
+      # print direction == 1 ? "V" : ">"
+      # puts "d-avail"
+      r, c = *move
+
+      sol_path = current_path.dup
+      sol_path << Robot.down() #direction
+
+      if solution = find_recursive(sol_path, r, c, path_min, path_max, 1 + path_size)
+        return solution
+      end
+    end
+
+    move = Map.move(Robot.right(), row, col)
+    if map.avail?(*move)
+      # print other_direction == 1 ? "V" : ">"
+
+      # puts "od-avail"
+      r, c = *move
+
+      sol_path = current_path.dup
+      sol_path << Robot.right() #other_direction
+
+      if solution = find_recursive(sol_path, r, c, path_min, path_max, 1 + path_size)
+        return solution
+      end
+    end
+    # print other_direction == 1 ? "^" : "<"
+
+    return solution
+  end
+
+  def solve_recursive_from(current_path, row=0, col=0, path_min=@min,path_max=@max, path_size=current_path.size)
+    solution = false
+    if path_size > path_min #@min_size
+      if path_size > (path_max - 1) # about to be too big ...check, and decide ...don't loop again
+        if map.verify(current_path, row, col)
+          puts "\tFound it (#{current_path.inspect})!\t"
+          return current_path
+        else
+          # fill array as soon as we get a big-enough path
+          return nil # return nil to indicate that we exited w/ a "potentially" valid row
+          # problem ...the other returns, in this method need to propagate the 'nil' ...and not 'false'
+        end
+      else
+        if result = map.verify(current_path, row, col)
+          puts "\tFound it (#{current_path.inspect})!\t"
+          return current_path
+        end
+      end
+  
+    # else
+    #   return solution if path_size != path_min
+    end
+  
+    move = Map.move(Robot.down(), row, col)
+    if map.avail?(*move)
+      # print direction == 1 ? "V" : ">"
+      # puts "d-avail"
+      r, c = *move
+  
+      sol_path = current_path.dup
+      sol_path << Robot.down() #direction
+  
+      if solution = solve_recursive_from(sol_path, r, c, path_min, path_max, 1 + path_size)
+        return solution
+      end
+    end
+  
+    move = Map.move(Robot.right(), row, col)
+    if map.avail?(*move)
+      # print other_direction == 1 ? "V" : ">"
+  
+      # puts "od-avail"
+      r, c = *move
+  
+      sol_path = current_path.dup
+      sol_path << Robot.right() #other_direction
+  
+      if solution = solve_recursive_from(sol_path, r, c, path_min, path_max, 1 + path_size)
+        return solution
+      end
+    end
+    # print other_direction == 1 ? "^" : "<"
+  
+    return solution
+  end
+
+  def orig_solve_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)
+    solution = false
+    #      puts "\n#{current_path.inspect}"
+    path_size = row + col # current_path.size
+    if path_size > path_min #@min_size
+
       # puts "+"
       if path_size > (path_max - 1) # about to be too big ...check, and decide ...don't loop again
         if map.verify(current_path, row, col) #, jump_row, jump_col)
@@ -98,6 +261,9 @@ class Robot
           return current_path
         end
       end
+
+      # elsif strict && (path_size < path_min)
+      #   return solution
     end
 
 
@@ -110,7 +276,7 @@ class Robot
       sol_path = current_path.dup
       sol_path << Robot.down() #direction
 
-      if solution = solve_recursive(sol_path, r, c, path_min, path_max) #, jump_row, jump_col)
+      if solution = orig_solve_recursive(sol_path, r, c, path_min, path_max) #, jump_row, jump_col)
         return solution
       end
     end
@@ -125,7 +291,76 @@ class Robot
       sol_path = current_path.dup
       sol_path << Robot.right() #other_direction
 
-      if solution = solve_recursive(sol_path, r, c, path_min, path_max) #, jump_row, jump_col)
+      if solution = orig_solve_recursive(sol_path, r, c, path_min, path_max) #, jump_row, jump_col)
+        return solution
+      end
+    end
+    # print other_direction == 1 ? "^" : "<"
+
+    return solution
+  end
+
+  def bak_orig_solve_recursive(current_path=[], row=0, col=0, path_min=@min,path_max=@max)
+    solution = false
+    #      puts "\n#{current_path.inspect}"
+    path_size = current_path.size
+    if path_size > path_min #@min_size
+      if @short_cut
+        # store this if we're working on the _least_dense_/_min_ row
+        @jump_from[row] ||= []; @jump_from[row][col] ||= []
+        @jump_from[row][col] << current_path
+      end
+
+      # puts "+"
+      if path_size > (path_max - 1) # about to be too big ...check, and decide ...don't loop again
+        if map.verify(current_path, row, col) #, jump_row, jump_col)
+          puts "\tFound it (#{current_path.inspect})!\t"
+          return current_path
+        else
+          # fill array as soon as we get a big-enough path
+          return nil # return nil to indicate that we exited w/ a "potentially" valid row
+          # problem ...the other returns, in this method need to propagate the 'nil' ...and not 'false'
+        end
+      else
+
+        # result = map.verify(current_path, row, col)
+        # return false if @short_cut && !result # nil
+        if result = map.verify(current_path, row, col) #, jump_row, jump_col)
+          puts "\tFound it (#{current_path.inspect})!\t"
+          return current_path
+        end
+      end
+
+      # elsif strict && (path_size < path_min)
+      #   return solution
+    end
+
+
+    move = Map.move(Robot.down(), row, col)
+    if map.avail?(*move)
+      # print direction == 1 ? "V" : ">"
+      # puts "d-avail"
+      r, c = *move
+
+      sol_path = current_path.dup
+      sol_path << Robot.down() #direction
+
+      if solution = bak_orig_solve_recursive(sol_path, r, c, path_min, path_max) #, jump_row, jump_col)
+        return solution
+      end
+    end
+
+    move = Map.move(Robot.right(), row, col)
+    if map.avail?(*move)
+      # print other_direction == 1 ? "V" : ">"
+
+      # puts "od-avail"
+      r, c = *move
+
+      sol_path = current_path.dup
+      sol_path << Robot.right() #other_direction
+
+      if solution = bak_orig_solve_recursive(sol_path, r, c, path_min, path_max) #, jump_row, jump_col)
         return solution
       end
     end
@@ -148,59 +383,165 @@ class Robot
     all_size_configs = main_configs.dup.reverse
     # .mid_first.reverse
 
-    # @path = single_jump(time_of, result, all_size_configs)
+    @path = single_jump(time_of, result, all_size_configs)
     # @path = multi_p(time_of, result, all_size_configs)
     # @path = multi_t(time_of, result, all_size_configs)
-    @path = single(time_of, result, all_size_configs)
+    # @path = single(time_of, result, all_size_configs)
 
     time_of[:end] = Time.now
     puts "returning path: #{@path}; took: #{time_of[:end] - time_of[:begin]}\n"
     return @path
   end
 
+  def jump_from_matrix_to_ary
+    _height = Map.height(@jump_from)
+    _width = Map.width(map.matrix) 
+    
+    [].tap do |ary|
+      (0).upto(_height) do |y_val| # row
+        next if !@jump_from[y_val] || @jump_from[y_val].empty?
+        # puts "found an across..."
+        (0).upto(_width) do |x_val| # col
+          next if !@jump_from[y_val][x_val] || @jump_from[y_val][x_val].empty? #|| true == @jump_from[y_val][x_val]
+          # @jump_from[y_val][x_val].uniq!
+          
+          # puts "path-list: #{@jump_from[x_val][y_val].inspect}"
+          @jump_from[y_val][x_val].each do |start_path|
+            ary << [start_path, y_val, x_val]
+          end
+          
+        end # width
+      end # height
+    end # tap
+  end
+  
+  # class Foo
+  #   def t(num=1)
+  #     [].tap do |ary|
+  #       num.times { ary << [[:path_ary], :r, :c]}
+  #     end
+  #   end
+  # end
+
+  def init_jump_points
+    result = nil
+    # initialize *new* jump_from: @jump_from[r][c] << path
+    
+    path_ary = []
+    start_paths = nil
+    
+    # #trim journey into chunks:
+    # if @min > 20 # doesn't seem to save any time/work...
+    #   best_distance = (8..16).to_a
+    #   index_counts = best_distance.collect do |distance|
+    #     Map.safe_coords(map.matrix, distance, distance).count
+    #   end
+    #   _max = best_distance[index_counts.min]
+    #   _min = _max - 1
+    #   puts "finding paths #{_min}-#{_max}"
+    #   find_recursive([], 0, 0, _min, _max, 0)
+    #   start_paths = jump_from_matrix_to_ary()
+    #   @jump_from = []; @jump_from[0] = []
+    #   
+    #   # if @jump_from.empty?
+    #   #   "ok"
+    #   # else
+    #   #   "nok"
+    #   # end
+    # end
+    
+    # puts "start_paths: #{start_paths.inspect}"
+    start_paths ||= [[[], 0, 0]]
+    puts "starting w/ #{start_paths.size} paths to try"
+    start_paths.each do |path_ary, row, col|
+      # puts "sp - p: #{path_ary.inspect}; r: #{row.inspect}; c: #{col.inspect}"
+      # row = path_ary.count("D"); col = path_ary.count("R")
+      # puts "finding paths between #{@pre_min} and #{@min}"
+            
+      result = find_recursive(path_ary, row, col, @pre_min, @min, row + col)
+      # result = orig_solve_recursive(path_ary, row, col, @pre_min, @min)
+      #orig_solve_recursive(path_ary, row, col, @pre_min, @min, path_ary.size)
+
+    end
+
+    @short_cut = false
+    if @jump_from.empty?
+      puts "empty jump_from"
+      @jump_from[0][0] = [ []]
+    end
+
+    return result
+  end
+
   def single_jump(time_of, result, all_size_configs)
-    result = init_jump_points
+    init_jump_points
     unless result
       puts "init'ted..."
-      _height = Map.height(@jump_from)
-      _width = Map.widest_point(@jump_from) 
-
-puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
+      # HMM:
+      # _height = Map.height(@jump_from)
+      # _width = Map.width(map.matrix) #Map.widest_point(@jump_from) 
+      # 
+      # puts "height: #{_height} / width: #{_width}; 
+      puts "#{Time.now - time_of[:begin]}"
     end
+
+    # HMM:
+    jump_paths = jump_from_matrix_to_ary
+    @jump_from[0][0] = [ []]
+    puts "working w/ #{jump_paths.count} paths"
 
     while ((! result) && all_size_configs.size > 0)
       config_ary = all_size_configs.shift
       puts "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
 
-      (0).upto(_height) do |y_val|
-        next if !@jump_from[y_val] || @jump_from[y_val].empty?
-        # puts "found an across..."
-        (0).upto(_width) do |x_val|
-          next if !@jump_from[y_val][x_val] || @jump_from[y_val][x_val].empty?
-          # puts "found an across/down..."
-          
-          
-          # Attempt to jump_verify for the current (max-)range, starting from x_val, y_val
-          min, max = *config_ary
-          jump_row = x_val; jump_col = y_val
-          result = solve_recursive([], x_val, y_val, min, max, jump_row, jump_col)  # it's got to "map.jump_verify..."  
-          if result # Look for the first-portion of this result-path
-            puts "looking for part-1 of: #{result.inspect}; #{Time.now - time_of[:begin]}"
-            # Now, (regular) verify a combo-path made-up of the current result
-            @jump_from[x_val][y_val].each do |start_path|
-              if result = map.verify(start_path + result, 0, 0)      
-                puts "full-path: #{result.inspect}"
-                return result
-              else
-                puts "np"
-              end
-            end # each-path
-          else
-            puts "no jump-result; #{Time.now - time_of[:begin]}"
-          end # jump-result
+      # HMM:
+      # (0).upto(_height) do |y_val|
+      #   next if !@jump_from[y_val] || @jump_from[y_val].empty?
+      #   puts "found an across..."
+      #   (0).upto(_width) do |x_val|
+      #     next if !@jump_from[y_val][x_val] || @jump_from[y_val][x_val].empty?
+      #     puts "found an across/down..."
 
-        end # width
-      end # height
+# HMM:
+# @jump_from[y_val][x_val].each  do |path_ary|
+      jump_paths.each do |path_ary, row, col|
+      # row = y_val; col = x_val
+      # print "got a path: "
+      
+    #  if map.fold_map(row,col) == Map::BM
+    #    # puts "bm"
+    #   next 
+    # end
+      # puts "k"
+        min, max = *config_ary
+        # jump_row = x_val; jump_col = y_val
+        # result = solve_recursive([], x_val, y_val, min, max, jump_row, jump_col)  # it's got to "map.jump_verify..."  
+
+        # path_size = @jump_from[y_val][x_val].size
+        # result = solve_recursive_from(@jump_from[y_val][x_val], min, max, path_size)
+                
+        result = solve_recursive_from(path_ary, row, col, min, max, row + col)
+       # result =  orig_solve_recursive(path_ary, row, col, min, max)
+        return result if result
+      end
+          # if result # Look for the first-portion of this result-path
+          #   puts "looking for part-1 of: #{result.inspect}; #{Time.now - time_of[:begin]}"
+          #   # Now, (regular) verify a combo-path made-up of the current result
+          #   @jump_from[x_val][y_val].each do |start_path|
+          #     if result = map.verify(start_path + result, 0, 0)      
+          #       puts "full-path: #{result.inspect}"
+          #       return result
+          #     else
+          #       puts "np"
+          #     end
+          #   end # each-path
+          # else
+          #   puts "no jump-result; #{Time.now - time_of[:begin]}"
+          # end # jump-result
+          
+# #HMM:
+#         end # width
+#       end # height
 
     end # while
 
@@ -213,19 +554,8 @@ puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
     while ((! result) && all_size_configs.size > 0)
       config_ary = all_size_configs.shift
       print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
-      result = solve_recursive([], 0, 0, *config_ary)
-    end
-    return result
-  end
-
-  def init_jump_points
-    result = nil
-    # initialize *new* jump_from: @jump_from[r][c] << path
-    result = solve_recursive([], 0, 0, @pre_min, @min)
-    @short_cut = false
-    if @jump_from.empty?
-      puts "empty jump_from"
-      @jump_from[0][0] = [ []]
+      result = orig_solve_recursive([], 0, 0, *config_ary)
+      # result = solve_non_recursive([], 0, 0, *config_ary)
     end
     return result
   end
@@ -313,7 +643,7 @@ puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
   #     # short_cut = true
   #     # short_cut = false
   #     # initialize @start_from
-  #     result = solve_recursive([], 0, 0, @pre_min, @min)
+  #     result = orig_solve_recursive([], 0, 0, @pre_min, @min)
   #     # @short_cut = false # why?!
   #     # fold_key_pts
   #   end
@@ -335,7 +665,7 @@ puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
   #     print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
   # 
   #     # find a way to trim @start_from!
-  #     # can I detect when solve_recursive returns an invalid-path:
+  #     # can I detect when orig_solve_recursive returns an invalid-path:
   #     # e.g. it drops-out the back-door, as opposed to growing beyond max (i.e. config_ary[1] )
   #     # no...
   # 
@@ -343,7 +673,7 @@ puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
   #     @start_from = []
   #     start_arys.each do |start_ary|
   #       # puts "start_ary: #{start_ary.inspect}; #{start_ary[1]}"
-  #       break if result = solve_recursive(start_ary[0], start_ary[1], start_ary[2], *config_ary)
+  #       break if result = orig_solve_recursive(start_ary[0], start_ary[1], start_ary[2], *config_ary)
   #     end
   # 
   #     unless result
@@ -386,7 +716,7 @@ puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
         time_of[:"loop_#{i}_begin"] = Time.now
         config_ary = large_configs.shift
         print "lg-trying config: #{config_ary.inspect}; #{large_configs.size} left"
-        Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
+        Thread.current["result"] = orig_solve_recursive([], 0, 0,*config_ary)
         time_of[:"loop_#{i}_end"] = Time.now
         puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
         i += 1
@@ -405,7 +735,7 @@ puts "height: #{_height} / width: #{_width}; #{Time.now - time_of[:begin]}"
           time_of[:"loop_#{i}_begin"] = Time.now
           config_ary = small_configs.shift
           print "sm-trying config: #{config_ary.inspect}; #{small_configs.size} left"
-          Thread.current["result"] = solve_recursive([], 0, 0,*config_ary)
+          Thread.current["result"] = orig_solve_recursive([], 0, 0,*config_ary)
           time_of[:"loop_#{i}_end"] = Time.now
           puts "; took: #{time_of[:"loop_#{i}_end"] - time_of[:"loop_#{i}_begin"]}\n"
           i += 1
