@@ -46,7 +46,7 @@ class Map
   end
 
   def fill_matrix
-    @matrix = construct_matrix
+    @matrix = blockout_non_exits( robot.min, construct_matrix )
   end
 
   def clear_matrix
@@ -77,7 +77,7 @@ class Map
     # puts "coord_path: #{coord_path.inspect} vs. path_ary: #{path_ary.inspect}" unless coord_path.empty?
     # return unless @debug
     if _matrix.nil?
-      # puts "nil matrix"
+      puts "nil matrix"
       clear_matrix
       _matrix = fill_matrix
     elsif _matrix.empty? # someone else's matrix ?!
@@ -219,8 +219,143 @@ class Map
       end # end height-loop
     end # end width-loop
 
-    fill_in_dead_ends( _matrix )
+
+    fill_in_dead_ends( _matrix )    
   end
+
+  def blockout_non_exits(_min=robot.min, _matrix=@matrix)
+    fill_in_dead_ends(blockout_bottom( _min, blockout_right(_min, _matrix)))
+  end
+
+
+  def blockout_right(_min=robot.min, _matrix=@matrix)
+    Map.blockout_border(_min, _matrix, :up) # :move_up, :upmost_exit)
+  end
+
+  def blockout_bottom(_min=robot.min, _matrix=@matrix)
+    Map.blockout_border(_min, _matrix, :left) # :move_left, :leftmost_exit)
+  end
+
+  def self.blockout_border(_min, _matrix, movement) #movement_method, coord_method)
+    # puts "coord_method: #{coord_method.inspect}"
+    if movement == :left
+      initial_coord = leftmost_exit(_min, _matrix)
+    else
+      initial_coord = upmost_exit(_min, _matrix)
+    end
+    # puts "initial_coord: #{initial_coord.inspect}"
+
+    return _matrix if initial_coord.empty? || 0 == initial_coord[0] || 0 == initial_coord[1] 
+
+    coord_and_matrix = [*initial_coord.dup]
+    coord_and_matrix << _matrix # [r, c, [m]]
+    # puts "initial_coord: #{initial_coord.inspect} of #{_matrix.size}"
+
+    # return _matrix  # BUG?!
+
+    # initial coord is not a bomb and must remain safe!
+    coord = nil
+    count = 0
+    begin # get the next coord
+      # puts '.'
+      if coord
+        count += 1
+        # puts "attempting to block: #{coord.inspect}"
+        _matrix[coord[0]][coord[1]] = Map.bomb
+      end
+      if movement == :left
+        coord = leftmost_exit(coord_and_matrix[0], coord_and_matrix[1] )
+      else
+        coord = upmost_exit(coord_and_matrix[0], coord_and_matrix[1] )
+      end
+      coord_and_matrix = [*coord.dup] # not sure why coord gets corrupted!
+      coord_and_matrix << _matrix # [r, c, [m]]
+
+      # if we've reached a bomb stop
+      # else make it a bomb & loop again
+
+    end until 0 == coord[0] || 0 == coord[1] 
+
+    # puts "blocked-out #{count} cells"
+    # return 0 == count ? nil : count
+    _matrix
+  end
+
+  def self.upmost_exit(_min, _matrix)
+    _height = Map.height(_matrix)
+    _width = Map.width(_matrix) 
+
+    # start at the uppermost safe_coords that is _min distance from start of matrix    
+    _row, _col = upmost_safe_coord(_min, _matrix)
+    # puts "ue got: #{_row}/#{_col}"
+
+    # use coord to construct the rectangle that we will repeat
+    # (?to the middle and then double?) till we get to the end of the matrix
+    # this final coord is our aim...
+
+    # FIXME: to calculate the associated edge-value
+    new_row, new_col = final_coord(_row, _col, _matrix)
+    [new_row, _width]
+  end
+
+  # approx.
+  def self.final_coord(_row,_col, _matrix)
+    _height = Map.height(_matrix)
+    _width = Map.width(_matrix)
+    new_row = new_col = 0
+
+    unless _row == 0
+      new_row = _row * (_height / _row)
+    end
+
+    unless _col == 0
+      new_col = _col * (_width / _col)
+    end
+
+    [new_row, new_col]
+  end
+
+  def self.leftmost_exit(_min, _matrix)
+    _height = Map.height(_matrix)
+    _width = Map.width(_matrix) 
+
+    # start at the leftmost safe_coords that is _min distance from start of matrix
+    _row, _col = leftmost_safe_coord(_min, _matrix)
+    # puts "lm got: #{_row}/#{_col}"
+
+    # FIXME: to calculate the associated edge-value
+    new_row, new_col = final_coord(_row, _col, _matrix)
+    [_height, new_col]
+  end
+
+  def self.upmost_safe_coord(_min, _matrix)
+    # .first
+    Map.safe_coords(_matrix, _min, _min).first
+    # .sort do |c1,c2|
+    #   # puts "coords: #{c1.inspect} (#{c1[0]} < #{c2[0]}) #{c2.inspect}"
+    #   c1[0] <=> c2[0] && c2[1] <=> c1[1] #upmost (small 1st coord) & rightmost (big 2nd coord)
+    # end.first
+  end
+
+  def self.leftmost_safe_coord(_min, _matrix)
+    # .last
+    safe_coords(_matrix, _min, _min).last
+    # .sort do |c1,c2|
+    #   # c1[1] < c2[1]
+    #   # puts "coords: #{c1.inspect} (#{c1[1]} < #{c2[1]}) #{c2.inspect}"
+    #   c1[1] <=> c2[1] && c2[0] <=> c1[0] #leftmost (small 2nd coord) & downmost (big 1st coord)
+    # end.first
+  end
+
+  # # [top, <distance>]
+  # def self.up_most(distance=0)
+  #   [0, distance]
+  # end
+  # 
+  # # [<distance>, left]
+  # def self.left_most(distance=0)
+  #   [distance, 0]
+  # end
 
   def coord_generator(row, col)
     new_row = row; new_col = col
@@ -239,8 +374,15 @@ class Map
   # 
   def fold_map(row, col)
     # puts "folding..."
-    # @map_folds["#{row}_#{col}"] ||= generate_fold(row, col)
-    @map_folds[row][col] ||= generate_fold(row, col)
+    # @map_folds[row][col] ||= generate_fold(row, col)
+
+    @map_folds[row] ||= []
+    # true == @map_folds[row][col]
+    if @map_folds[row][col].nil? || @map_folds[row][col].empty?
+      @map_folds[row][col] = generate_fold(row, col)
+    end
+
+    @map_folds[row][col] 
   end
 
   def identity_matrix(_height, _width)
@@ -256,6 +398,11 @@ class Map
     end # tap
   end
 
+  # HMM...
+  # can probably generate a _Faster_ fold (or approximation)
+  # by exploiting the place(s) in the map where
+  # a multiple of the min-line is 1 < a  multiple of the max-line
+  # 
   def generate_fold(row, col)
     # puts "gen(#{row}/#{col})"
     next_coord = coord_generator(row, col)
@@ -391,7 +538,7 @@ class Map
     # merging these two took: 288 vs. 255 doing fold_verify by itself
     return fold_verify(path_ary, start_row, start_col)
 
-  # do the work...
+    # do the work...
     # down_chunk = (_height / start_row)
     # right_chunk = (_width / start_col)
     # while ! Map.success?(row, col, _height, _width)
@@ -427,11 +574,12 @@ class Map
     start_row = row; start_col = col
 
     # puts "verifying..."
-    @map_folds[row] ||= [] # switching to a multi-dim array dropped time from 255 = 162 secs!
-    draw = ! @map_folds[row][col] # is there a more efficient-key?
+    @map_folds[row] ||= [] # hash => multi-dim array dropped time from 255 = 162 secs!
+    draw = @map_folds[row][col].nil?
     _matrix = fold_map(row,col)
 
     if BM == _matrix
+      # puts "HAD a bm..."
       return false
     end
 
@@ -519,12 +667,12 @@ class Map
 
     mark_invalid_bottom_spots(mark_invalid_right_spots( map_dup(_matrix), _height, _width ), _height, _width )
   end
-  
+
   # return the safe? spots in a given distance-range
   def self.safe_coords _matrix, _min_distance, _max_distance, _height=nil, _width=nil
     _height ||= Map.height(_matrix)
     _width ||= Map.width(_matrix)
-    
+
     [].tap do |safe_coords|
       Map.coords_in_a_range(_matrix, _min_distance, _max_distance, _height=nil, _width=nil).each do |row, col|
         safe_coords << [row, col] unless Map.fail?(row, col, _matrix)
@@ -536,7 +684,7 @@ class Map
   def self.coords_in_a_range _matrix, _min_distance, _max_distance, _height=nil, _width=nil
     _height ||= Map.height(_matrix)
     _width ||= Map.width(_matrix)
-    
+
     ary = []
     _matrix.each_with_index do |current_row,i|
       next unless current_row # probably need a way to capture the robot's extra-matric-steps :-o
@@ -614,6 +762,14 @@ class Map
     Marshal.load(Marshal.dump(_matrix))
   end
 
+  def self.move_left(row, col, amount_down=1, amount_right=1)
+    Map.reverse_move(Robot.right, row, col, amount_down, amount_right)
+  end
+
+  def self.move_up(row, col, amount_down=1, amount_right=1)
+    Map.reverse_move(Robot.down, row, col, amount_down, amount_right)
+  end
+
   def self.reverse_move(direction, row, col, amount_down=1, amount_right=1)
     basic_move direction, row, col, -1, -1
   end
@@ -631,15 +787,15 @@ class Map
   def self.valid_right_coords(_matrix)
     right_coords(_matrix).delete_if {|r,c| Map.fail?(r, c, _matrix)}
   end
-  
+
   def self.valid_bottom_coords(_matrix)
     bottom_coords(_matrix).delete_if {|r,c| Map.fail?(r, c, _matrix)}
   end
-  
+
   def self.right_coords(_matrix)
     _height = Map.height(_matrix)
     _width = Map.width(_matrix) 
-  
+
     col = _width
     [].tap do |coords|
       (0).upto(_height) do |row|
@@ -647,11 +803,11 @@ class Map
       end # rows
     end # tap
   end
-  
+
   def self.bottom_coords(_matrix)
     _height = Map.height(_matrix)
     _width = Map.width(_matrix) 
-  
+
     row = _height
     [].tap do |coords|
       (0).upto(_width) do |col|
@@ -685,8 +841,8 @@ class Map
   end
 
   def self.bm?(_matrix)
-    ( Map.bomb == _matrix[1][0] && Map.bomb == _matrix[0][1] ) ||
-    Map.bomb == _matrix[0][0] ||
+    ( Map.bomb == _matrix[0][0] ||
+    Map.bomb == _matrix[1][0] && Map.bomb == _matrix[0][1] ) ||
     Map.bomb == _matrix[height(_matrix)][width(_matrix)]
   end
 
