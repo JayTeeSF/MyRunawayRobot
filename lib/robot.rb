@@ -746,7 +746,7 @@ checked_paths = []
     while ((! result) && all_size_configs.size > 0)
       config_ary = all_size_configs.shift
       # trim_matrix according to the new _min value:
-      map.blockout_non_exits( config_ary[0] ) # more overhead than it's worth!
+      # map.blockout_non_exits( config_ary[0] ) # more overhead than it's worth!
       
       print "trying config: #{config_ary.inspect}; #{all_size_configs.size} left"
       result = orig_solve_recursive([], 0, 0, *config_ary)

@@ -46,7 +46,8 @@ class Map
   end
 
   def fill_matrix
-    @matrix = blockout_non_exits( robot.min, construct_matrix )
+    # @matrix = blockout_non_exits( robot.min, construct_matrix )
+    @matrix = construct_matrix
   end
 
   def clear_matrix
