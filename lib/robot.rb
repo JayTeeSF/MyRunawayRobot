@@ -25,6 +25,7 @@ class Robot
 
     @map.config(options)
     @map.robot = self
+# puts "current matrix is: #{@map.matrix.inspect}"
     @map.draw_matrix(@map.matrix, 0, 0)
 
     # true by default
@@ -179,6 +180,48 @@ class Robot
 
     return solution
   end
+  
+  def find_path(current_path, row=0, col=0, max_row=0, max_col=0, _matrix=map.matrix)
+    solution = false
+    
+    # got it:
+    return current_path if row == max_row && col == max_col
+    
+    # gone too far:
+    return solution if row > max_row || col > max_col
+
+    #### LOH:    
+    r, c = Map.move(Robot.down(), row, col)
+    if Map.avail?(r, c, _matrix)
+      # print direction == 1 ? "V" : ">"
+      # puts "d-avail"
+      # r, c = *move
+
+      sol_path = current_path.dup
+      sol_path << Robot.down() #direction
+
+      if solution = find_path(sol_path, r, c, max_row, max_col, _matrix)
+        return solution
+      end
+    end
+
+    r, c = Map.move(Robot.right(), row, col)
+    # r, c = *move
+    if Map.avail?(r, c, _matrix)
+      # print other_direction == 1 ? "V" : ">"
+      # puts "od-avail"
+
+      sol_path = current_path.dup
+      sol_path << Robot.right() #other_direction
+
+      if solution = find_path(sol_path, r, c, max_row, max_col, _matrix)
+        return solution
+      end
+    end
+    # print other_direction == 1 ? "^" : "<"
+
+    return solution
+  end # end-find_path
 
   def solve_recursive_from(current_path, row=0, col=0, path_min=@min,path_max=@max, path_size=current_path.size)
     solution = false
@@ -390,11 +433,44 @@ class Robot
     # @path = single_jump(time_of, result, all_size_configs)
     # @path = multi_p(time_of, result, all_size_configs)
     # @path = multi_t(time_of, result, all_size_configs)
-    @path = single(time_of, result, all_size_configs)
+    if @pre_min > 10
+      @path = new_soln(time_of, result, all_size_configs)
+    else
+      @path = single(time_of, result, all_size_configs)
+    end
 
     time_of[:end] = Time.now
     puts "returning path: #{@path}; took: #{time_of[:end] - time_of[:begin]}\n"
     return @path
+  end
+
+  def new_soln(time_of, result, all_size_configs)
+    _matrix = nil
+
+    # (1) look for a non-bm matrix
+    (@min).upto(@max).each do |distance|
+      # get safe coords at current distance
+      Map.safe_coords(map.matrix, distance, distance).each do |row, col|
+        # limit the # of possible exits
+        # map.blockout_non_exits( Map.distance(row, col) ) # perhaps modify this to use a coord
+        _matrix = map.fold_map(row,col)
+        unless _matrix == Map::BM
+          # (2) find a path through this matrix - else continue our search
+          # puts "finding a path through:\n#{_matrix.inspect}\n"
+          current_path = find_path([], 0, 0, row, col, _matrix)
+
+          # (3) verify path or continue our search
+          result = map.verify(current_path, row, col)
+          if result
+            puts "got result: #{current_path.inspect}"
+            return current_path
+          end
+        end # unless BM
+      end # safe_coords @ distance
+    end # distance
+
+    puts "failed to find a result!"
+    return result
   end
 
   def matrix_to_paths(_matrix)

@@ -264,9 +264,9 @@ class Map
         _matrix[coord[0]][coord[1]] = Map.bomb
       end
       if movement == :left
-        coord = leftmost_exit(coord_and_matrix[0], coord_and_matrix[1] )
+        coord = move_left(coord_and_matrix[0], coord_and_matrix[1] )
       else
-        coord = upmost_exit(coord_and_matrix[0], coord_and_matrix[1] )
+        coord = move_up(coord_and_matrix[0], coord_and_matrix[1] )
       end
       coord_and_matrix = [*coord.dup] # not sure why coord gets corrupted!
       coord_and_matrix << _matrix # [r, c, [m]]
@@ -650,11 +650,15 @@ class Map
   end
 
   def avail?(row,col, _matrix=@matrix)
-    ! Map.fail?(row, col, _matrix)
+    Map.avail?(row, col, _matrix)
   end  
 
   def self.success?(row, col, _height, _width)
     row > _height || col > _width
+  end
+
+  def self.avail?(row, col, _matrix)
+    ! Map.fail?(row, col, _matrix)
   end
 
   def self.fail?(row, col, _matrix)
