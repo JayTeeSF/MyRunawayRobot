@@ -17,6 +17,7 @@ DEFAULT_LEVEL = 0
 tries = 3
 print "Please enter a start-level [#{DEFAULT_LEVEL}]: "
 counter = (gets.chomp || DEFAULT_LEVEL).to_i
+level = counter
 puts "\n"
 
 def get_time
@@ -98,6 +99,7 @@ while true
     :board_y        => param_name[/FVboardY=(\d*)&/,1].to_i,
     :level          => param_name[/FVlevel=(\d*)/,1].to_i
   }
+  level = @params[:level]
   puts "\n\nusing: #{@params.map {|k,v| ":#{k} => \"#{v}\""}.join(', ')}...\n"
   robot = Robot.new()
   # GC.start
@@ -110,6 +112,6 @@ while true
   puts report
   unless (path || path.size > 0)
     puts "no path...; get a fresh board"
-    counter += 1
+    counter =  level + 1
   end
 end
