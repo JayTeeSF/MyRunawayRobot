@@ -1,0 +1,26 @@
+require 'narray' 
+ m1 = NArray.byte(2) # by default all cells are "safe"
+ m1[0] = 1
+ m1[1] = 1  #loop through byte arrays, and set the "bombs"
+
+ m2 = NArray.byte(2)
+ => NArray.byte(2): 
+[ 0, 0 ] 
+ree-1.8.7-2010.02 > m3 = NArray.byte(2)
+ => NArray.byte(2): 
+[ 0, 0 ] 
+ree-1.8.7-2010.02 > m = [m1, m2, m3]
+ => [NArray.byte(2): 
+[ 1, 1 ], NArray.byte(2): 
+[ 0, 0 ], NArray.byte(2): 
+[ 0, 0 ]] 
+ree-1.8.7-2010.02 > p m[0]
+NArray.byte(2): 
+[ 1, 1 ]
+ => nil 
+ree-1.8.7-2010.02 > p m[0][1]
+1
+ => nil 
+ree-1.8.7-2010.02 > p m[1][1]
+0
+
