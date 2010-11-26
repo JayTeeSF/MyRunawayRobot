@@ -78,13 +78,16 @@ class Map
     # puts "coord_path: #{coord_path.inspect} vs. path_ary: #{path_ary.inspect}" unless coord_path.empty?
     # return unless @debug
     if _matrix.nil?
-      puts "nil matrix"
+      # puts "nil matrix"
       clear_matrix
       _matrix = fill_matrix
     elsif _matrix.empty? # someone else's matrix ?!
-      puts "empty matrix"
+      # puts "empty matrix"
       _matrix = construct_matrix( _matrix ) # no fill-in, here
     end
+puts "no drawing today..."
+    return true
+
     # puts "drawing: _matrix: #{_matrix.inspect}"
 
     # deep-copy the array, before any (potential) modifications
@@ -607,7 +610,7 @@ class Map
 
     #   # if we made it through the folded matrix --then we're good!
     # puts "recursive-verify!"
-    puts "!: #{start_row}/#{start_col}"
+    # puts "!: #{start_row}/#{start_col}"
     #: #{path_ary.inspect}"
     return recursive_verify(path_ary, start_row, start_col)
   end

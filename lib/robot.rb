@@ -462,7 +462,7 @@ class Robot
           # (3) verify path or continue our search
           result = map.verify(current_path, row, col)
           if result
-            puts "got result: #{current_path.inspect}"
+            # puts "got result: #{current_path.inspect}"
             return current_path
           end
         end # unless BM
@@ -756,10 +756,10 @@ checked_paths = []
   end
 
   def config(a_min=@pre_min,a_max=@max)
-    puts "ideal_range: #{ideal_range} ( a_max(#{a_max}), a_min * 2(#{2 * a_min}) and a_max * 2(#{2 * a_max})) (out of #{map.width})"
+    #puts "ideal_range: #{ideal_range} ( a_max(#{a_max}), a_min * 2(#{2 * a_min}) and a_max * 2(#{2 * a_max})) (out of #{map.width})"
 
     total_range = diff(a_min,a_max)
-    puts "min: #{a_min} - max: #{a_max}; total_range: #{total_range}"
+    #puts "min: #{a_min} - max: #{a_max}; total_range: #{total_range}"
     return [[a_min, a_max]] if total_range < 2 || total_range <= ideal_range
     # || ideal_range < 2
 
@@ -767,7 +767,7 @@ checked_paths = []
     r_min = a_min
     r_max = r_min + ideal_range
     while ((r_max <= a_max) && (r_min < a_max))
-      puts "adding: #{r_min}:#{r_max}"
+      # puts "adding: #{r_min}:#{r_max}"
       ranges << [r_min,r_max]
       r_min += ideal_range # + 1
 
